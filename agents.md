@@ -1,0 +1,1 @@
+use uv for dependency management. use `python -m uv run` to run it

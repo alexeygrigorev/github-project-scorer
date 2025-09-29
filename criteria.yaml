@@ -1,0 +1,106 @@
+criteria:
+  - name: "Problem description"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "The problem is not described"
+      - score: 1
+        description: "The problem is described but briefly or unclearly"
+      - score: 2
+        description: "The problem is well-described and it's clear what problem the project solves"
+
+  - name: "Retrieval flow"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No knowledge base or LLM is used"
+      - score: 1
+        description: "No knowledge base is used, and the LLM is queried directly"
+      - score: 2
+        description: "Both a knowledge base and an LLM are used in the flow"
+
+  - name: "Retrieval evaluation"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No evaluation of retrieval is provided"
+      - score: 1
+        description: "Only one retrieval approach is evaluated"
+      - score: 2
+        description: "Multiple retrieval approaches are evaluated, and the best one is used"
+
+  - name: "LLM evaluation"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No evaluation of final LLM output is provided"
+      - score: 1
+        description: "Only one approach (e.g., one prompt) is evaluated"
+      - score: 2
+        description: "Multiple approaches are evaluated, and the best one is used"
+
+  - name: "Interface"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No way to interact with the application at all"
+      - score: 1
+        description: "Command line interface, a script, or a Jupyter notebook"
+      - score: 2
+        description: "UI (e.g., Streamlit), web application (e.g., Django), or an API (e.g., built with FastAPI)"
+
+  - name: "Ingestion pipeline"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No ingestion"
+      - score: 1
+        description: "Semi-automated ingestion of the dataset into the knowledge base, e.g., with a Jupyter notebook"
+      - score: 2
+        description: "Automated ingestion with a Python script or a special tool (e.g., Mage, dlt, Airflow, Prefect)"
+
+  - name: "Monitoring"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No monitoring"
+      - score: 1
+        description: "User feedback is collected OR there's a monitoring dashboard"
+      - score: 2
+        description: "User feedback is collected and there's a dashboard with at least 5 charts"
+
+  - name: "Containerization"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No containerization"
+      - score: 1
+        description: "Dockerfile is provided for the main application OR there's a docker-compose for the dependencies only"
+      - score: 2
+        description: "Everything is in docker-compose"
+
+  - name: "Reproducibility"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No instructions on how to run the code, the data is missing, or it's unclear how to access it"
+      - score: 1
+        description: "Some instructions are provided but are incomplete, OR instructions are clear and complete, the code works, but the data is missing"
+      - score: 2
+        description: "Instructions are clear, the dataset is accessible, it's easy to run the code, and it works. The versions for all dependencies are specified."
+
+  - name: "Best practices"
+    type: "checklist"
+    items:
+      - description: "Hybrid search: combining both text and vector search (at least evaluating it)"
+        points: 1
+      - description: "Document re-ranking"
+        points: 1
+      - description: "User query rewriting"
+        points: 1
+
+  - name: "Bonus points"
+    type: "checklist"
+    items:
+      - description: "Deployment to the cloud"
+        points: 2

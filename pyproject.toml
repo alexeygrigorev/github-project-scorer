@@ -1,0 +1,18 @@
+[project]
+name = "github-project-scorer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gitpython>=3.1.45",
+    "openai>=1.109.1",
+    "pathspec>=0.12.1",
+    "pydantic-ai>=1.0.10",
+    "pyyaml>=6.0.3",
+    "rich>=14.1.0",
+    "typer>=0.19.2",
+    "python-dotenv>=1.0.0",
+    "nbconvert>=7.16.6",
+    "nbformat>=5.10.4",
+]
