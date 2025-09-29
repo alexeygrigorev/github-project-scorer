@@ -24,7 +24,7 @@ class NotebookMarkdownFormatter:
         return md_body
 
 
-class FileAnalyzer:
+class GithubAnalyzerTools:
     """Tools for analyzing files in a repository"""
     
     def __init__(self, repo_path: Path):

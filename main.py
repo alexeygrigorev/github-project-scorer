@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from models import load_criteria_from_yaml, ProjectEvaluation
 from repository_manager import RepositoryManager
-from file_analyzer import FileAnalyzer
+from github_analyzer_tools import GithubAnalyzerTools
 from evaluator import ProjectEvaluator, AnalysisContext
 from report_generator import ReportGenerator, ImprovementGenerator
 
@@ -83,7 +83,7 @@ class GitHubProjectScorer:
             
             # Setup file analyzer and evaluator
             print("Analyzing repository structure...")
-            file_analyzer = FileAnalyzer(repo_path)
+            file_analyzer = GithubAnalyzerTools(repo_path)
             evaluator = ProjectEvaluator(self.model_string, file_analyzer)
             
             # Gather context
@@ -132,7 +132,7 @@ class GitHubProjectScorer:
             if cleanup:
                 repo_manager.cleanup()
     
-    async def _gather_analysis_context(self, repo_path: Path, file_analyzer: FileAnalyzer) -> AnalysisContext:
+    async def _gather_analysis_context(self, repo_path: Path, file_analyzer: GithubAnalyzerTools) -> AnalysisContext:
         """Gather analysis context for evaluation"""
         
         # Get project files
