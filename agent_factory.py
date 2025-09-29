@@ -131,14 +131,13 @@ def create_user_prompt(criteria: Union[ScoredCriteria, ChecklistCriteria]) -> st
         raise ValueError(f"Unknown criteria type: {type(criteria)}")
 
 
-def create_evaluation_agent(model_string: str, file_analyzer: GithubAnalyzerTools, output_type) -> Agent:
+def create_evaluation_agent(model_string: str, analyzer_tools: GithubAnalyzerTools) -> Agent:
     """Create a unified evaluation agent for both scored and checklist criteria"""
     
-    tools = get_instance_methods(file_analyzer)
+    tools = get_instance_methods(analyzer_tools)
     
     agent = Agent(
         model=model_string,
-        output_type=output_type,
         tools=tools,
         system_prompt=SYSTEM_INSTRUCTIONS
     )

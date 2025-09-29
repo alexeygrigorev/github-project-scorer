@@ -1,5 +1,4 @@
 import asyncio
-import os
 from pathlib import Path
 from typing import Optional, List
 from dotenv import load_dotenv
@@ -7,8 +6,9 @@ from dotenv import load_dotenv
 from models import load_criteria_from_yaml, ProjectEvaluation
 from repository_manager import RepositoryManager
 from github_analyzer_tools import GithubAnalyzerTools
-from evaluator import ProjectEvaluator, AnalysisContext
 from report_generator import ReportGenerator, ImprovementGenerator
+from evaluator import ProjectEvaluator
+
 
 # Load environment variables
 load_dotenv()
@@ -17,34 +17,14 @@ load_dotenv()
 class GitHubProjectScorer:
     """Main orchestrator for GitHub project evaluation"""
     
-    def __init__(self, 
-                 model_provider: str = "openai",
-                 model_name: str = "gpt-4o-mini",
-                 api_key: Optional[str] = None):
+    def __init__(self, model: str = "openai:gpt-4o-mini"):
         """
         Initialize the scorer
         
         Args:
-            model_provider: "openai" or "anthropic"
-            model_name: Model name (e.g., "gpt-4o-mini", "claude-3-sonnet-20240229")
-            api_key: API key (if None, will use environment variables)
+            model: Model string (e.g., "openai:gpt-4o-mini", "anthropic:claude-3-sonnet-20240229")
         """
-        
-        # Build model string for pydantic-ai
-        if model_provider.lower() == "openai":
-            self.model_string = f"openai:{model_name}"
-        elif model_provider.lower() == "anthropic":
-            self.model_string = f"anthropic:{model_name}"
-        else:
-            raise ValueError(f"Unsupported model provider: {model_provider}")
-        
-        # Set API key if provided
-        if api_key:
-            if model_provider.lower() == "openai":
-                os.environ["OPENAI_API_KEY"] = api_key
-            elif model_provider.lower() == "anthropic":
-                os.environ["ANTHROPIC_API_KEY"] = api_key
-        
+        self.model = model
         self.report_generator = ReportGenerator()
         self.improvement_generator = ImprovementGenerator()
     
@@ -80,24 +60,17 @@ class GitHubProjectScorer:
             # Clone repository
             print("Cloning repository...")
             repo_path = repo_manager.clone_repository(repo_url)
-            
-            # Setup file analyzer and evaluator
-            print("Analyzing repository structure...")
-            file_analyzer = GithubAnalyzerTools(repo_path)
-            evaluator = ProjectEvaluator(self.model_string, file_analyzer)
-            
-            # Gather context
-            context = await self._gather_analysis_context(repo_path, file_analyzer)
-            print(f"Found {context.file_stats['total_files']} files in repository")
-            
+
             # Evaluate criteria
             print("Starting evaluation...")
-            results = await evaluator.evaluate_project(criteria_list, context)
-            
+            analyzer_tools = GithubAnalyzerTools(repo_path)
+            evaluator = ProjectEvaluator(self.model, analyzer_tools)
+            results = await evaluator.evaluate_project(criteria_list)
+
             # Calculate totals
             total_score = sum(result.score for result in results)
             max_total_score = sum(result.max_score for result in results)
-            
+
             # Generate improvements
             improvements = self.improvement_generator.generate_improvements(results)
             
@@ -131,33 +104,7 @@ class GitHubProjectScorer:
         finally:
             if cleanup:
                 repo_manager.cleanup()
-    
-    async def _gather_analysis_context(self, repo_path: Path, file_analyzer: GithubAnalyzerTools) -> AnalysisContext:
-        """Gather analysis context for evaluation"""
-        
-        # Get project files
-        project_files = file_analyzer.list_files(max_files=500)
-        
-        # Get config files
-        config_files = file_analyzer.find_config_files()
-        
-        # Get file statistics
-        file_stats = file_analyzer.get_file_stats()
-        
-        # Read README content
-        readme_content = ""
-        readme_files = file_analyzer.find_files_by_name("readme*")
-        if readme_files:
-            readme_content = file_analyzer.read_file(readme_files[0], max_lines=200)
-        
-        return AnalysisContext(
-            repo_path=repo_path,
-            file_analyzer=file_analyzer,
-            project_files=project_files,
-            config_files=config_files,
-            file_stats=file_stats,
-            readme_content=readme_content
-        )
+
     
     async def evaluate_multiple_repositories(self,
                                            repo_urls: List[str],
@@ -357,18 +304,14 @@ async def cli_main():
     parser.add_argument("repo_url", help="GitHub repository URL")
     parser.add_argument("--criteria", default="criteria.yaml", help="Path to criteria YAML file")
     parser.add_argument("--output", help="Output directory for reports")
-    parser.add_argument("--model-provider", default="openai", choices=["openai", "anthropic"])
-    parser.add_argument("--model-name", default="gpt-4o-mini")
+    parser.add_argument("--model", default="openai:gpt-4o-mini")
     parser.add_argument("--no-cleanup", action="store_true", help="Don't cleanup cloned repository")
     
     args = parser.parse_args()
     
     # Initialize scorer
-    scorer = GitHubProjectScorer(
-        model_provider=args.model_provider,
-        model_name=args.model_name
-    )
-    
+    scorer = GitHubProjectScorer(model=args.model)
+
     # Run evaluation
     evaluation, usage_tracker = await scorer.evaluate_repository(
         repo_url=args.repo_url,

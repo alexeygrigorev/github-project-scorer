@@ -14,86 +14,73 @@ from models import ScoredCriteriaResult, ChecklistResult
 
 from github_analyzer_tools import GithubAnalyzerTools
 from usage_tracker import UsageTracker
-from agent_factory import AnalysisContext, create_evaluation_agent, create_user_prompt
+from agent_factory import create_evaluation_agent, create_user_prompt
 
 
 class ProjectEvaluator:
     """Main class for evaluating projects against criteria with beautiful Rich display"""
     
-    def __init__(self, model_string: str, file_analyzer: GithubAnalyzerTools):
-        self.model_string = model_string
-        self.file_analyzer = file_analyzer
+    def __init__(self, model: str, analyzer_tools: GithubAnalyzerTools):
+        self.model = model
+        self.analyzer_tools = analyzer_tools
         self.usage_tracker = UsageTracker()
         self.console = Console()
         
         # Create agents for different criteria types
-        self.scored_agent = create_evaluation_agent(model_string, file_analyzer, ScoredCriteriaResult)
-        self.checklist_agent = create_evaluation_agent(model_string, file_analyzer, ChecklistResult)
+        self.agent = create_evaluation_agent(
+            self.model,
+            analyzer_tools
+        )
 
-    async def evaluate_criteria(self, criteria: Union[ScoredCriteria, ChecklistCriteria], context: AnalysisContext) -> EvaluationResult:
+    async def evaluate_criteria(self, criteria: Union[ScoredCriteria, ChecklistCriteria]) -> EvaluationResult:
         """Evaluate a single criteria against the repository"""
-        
-        if isinstance(criteria, ScoredCriteria):
-            # Create user prompt for scored criteria
-            prompt = create_user_prompt(criteria)
-            result = await self._run_agent_with_streaming(self.scored_agent, prompt)
-            
-            # Track token usage if available
-            if hasattr(result, 'usage') and result.usage() is not None:
-                usage = result.usage()
-                self.usage_tracker.add_usage(
-                    model=self.model_string,
-                    input_tokens=usage.input_tokens or 0,
-                    output_tokens=usage.output_tokens or 0
-                )
-            
-            return EvaluationResult(
-                criteria_name=criteria.name,
-                criteria_type="scored",
-                score=result.output.score,
-                max_score=criteria.max_score,
-                reasoning=result.output.reasoning,
-                evidence=result.output.evidence,
-            )
 
-        elif isinstance(criteria, ChecklistCriteria):
-            # Create user prompt for checklist criteria
-            prompt = create_user_prompt(criteria)
-            result = await self._run_agent_with_streaming(self.checklist_agent, prompt)
-            
-            # Track token usage if available
-            if hasattr(result, 'usage') and result.usage() is not None:
-                usage = result.usage()
-                self.usage_tracker.add_usage(
-                    model=self.model_string,
-                    input_tokens=usage.input_tokens or 0,
-                    output_tokens=usage.output_tokens or 0
-                )
-            
+        # Choose the appropriate agent and determine criteria type
+        if isinstance(criteria, ScoredCriteria):
+            criteria_type = "scored"
+            output_type = ScoredCriteriaResult
+        else:  # ChecklistCriteria
+            criteria_type = "checklist"
+            output_type = ChecklistResult
+
+        # Run evaluation with the appropriate agent
+        prompt = create_user_prompt(criteria)
+        result = await self._run_agent_with_streaming(prompt, output_type)
+
+        usage = result.usage()
+        self.usage_tracker.add_usage(
+            model=self.model,
+            input_tokens=usage.input_tokens or 0,
+            output_tokens=usage.output_tokens or 0
+        )
+
+        # Calculate final score based on criteria type
+        if isinstance(criteria, ChecklistCriteria):
+            # For checklist: sum points of completed items
             completed_items = result.output.completed_items
             score = sum(
                 criteria.items[i].points
                 for i in completed_items
                 if i < len(criteria.items)
             )
-
-            return EvaluationResult(
-                criteria_name=criteria.name,
-                criteria_type="checklist",
-                score=score,
-                max_score=criteria.max_score,
-                reasoning=result.output.reasoning,
-                evidence=result.output.evidence,
-            )
-
         else:
-            raise ValueError(f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria.")
+            # For scored: use the score directly
+            score = result.output.score
 
-    async def _run_agent_with_streaming(self, agent, prompt: str):
+        return EvaluationResult(
+            criteria_name=criteria.name,
+            criteria_type=criteria_type,
+            score=score,
+            max_score=criteria.max_score,
+            reasoning=result.output.reasoning,
+            evidence=result.output.evidence,
+        )
+
+    async def _run_agent_with_streaming(self, prompt: str, output_type) -> Union[ScoredCriteriaResult, ChecklistResult]:
         """Run agent with real-time streaming tool calls"""
         self.console.print("  🤖 [bold blue]Starting evaluation...[/bold blue]")
-        
-        async with agent.iter(prompt) as run:
+
+        async with self.agent.iter(prompt, output_type=output_type) as run:
             result = None
             async for node in run:
                 if isinstance(node, FinalResultEvent):
@@ -137,7 +124,7 @@ class ProjectEvaluator:
                         
         return result
 
-    async def evaluate_all_criteria(self, criteria_list: List[Union[ScoredCriteria, ChecklistCriteria]], context: AnalysisContext) -> List[EvaluationResult]:
+    async def evaluate_project(self, criteria_list: List[Union[ScoredCriteria, ChecklistCriteria]]) -> List[EvaluationResult]:
         """Evaluate all criteria with beautiful Rich display"""
         
         results = []
@@ -166,12 +153,13 @@ class ProjectEvaluator:
                 title="🎯 Evaluating",
                 title_align="left"
             )
+
             self.console.print(panel)
             
             try:
-                result = await self.evaluate_criteria(criteria, context)
+                result = await self.evaluate_criteria(criteria)
                 results.append(result)
-                
+
                 # Show result summary
                 score_color = "green" if result.score == result.max_score else "yellow" if result.score > 0 else "red"
                 self.console.print(f"  🎯 [bold {score_color}]Score: {result.score}/{result.max_score}[/bold {score_color}]")
