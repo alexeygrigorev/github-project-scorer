@@ -17,15 +17,22 @@ class RepositoryManager:
     
     def clone_repository(self, repo_url: str, target_dir: Optional[Path] = None) -> Path:
         """
-        Clone a GitHub repository to a temporary directory
+        Clone a GitHub repository to a temporary directory, or return path if it's already local
         
         Args:
-            repo_url: GitHub repository URL
+            repo_url: GitHub repository URL or local filesystem path
             target_dir: Optional target directory, if None will use temp dir
             
         Returns:
-            Path to the cloned repository
+            Path to the repository (either cloned or local)
         """
+        # Check if this is a local filesystem path
+        local_path = Path(repo_url)
+        if local_path.exists() and local_path.is_dir():
+            print(f"Using local repository: {local_path}")
+            return local_path.resolve()
+        
+        # It's a URL, proceed with cloning
         if target_dir is None:
             # Create a unique temporary directory based on repo name
             repo_name = self._extract_repo_name(repo_url)
