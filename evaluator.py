@@ -1,6 +1,4 @@
-import inspect
 from typing import List, Union, Dict
-from pathlib import Path
 
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
@@ -8,7 +6,6 @@ from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
 )
-from pydantic import BaseModel
 from rich.console import Console
 from rich.text import Text
 from rich.panel import Panel
@@ -18,20 +15,6 @@ from file_analyzer import FileAnalyzer
 from usage_tracker import UsageTracker
 
 from agents import create_evaluation_agent, create_user_prompt
-
-
-class AnalysisContext(BaseModel):
-    """Context passed to evaluation agents"""
-
-    repo_path: Path
-    file_analyzer: FileAnalyzer
-    project_files: List[Path]
-    config_files: Dict[str, Path]
-    file_stats: Dict[str, int]
-    readme_content: str = ""
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class ProjectEvaluator:
@@ -48,8 +31,7 @@ class ProjectEvaluator:
 
     async def evaluate_criteria(
         self,
-        criteria: Union[ScoredCriteria, ChecklistCriteria],
-        context: AnalysisContext,
+        criteria: Union[ScoredCriteria, ChecklistCriteria]
     ) -> EvaluationResult:
         """Evaluate a single criteria with streaming tool calls"""
 
@@ -78,7 +60,7 @@ class ProjectEvaluator:
 
         elif isinstance(criteria, ChecklistCriteria):
             # Create user prompt for checklist criteria
-            prompt = create_user_prompt(criteria, context)
+            prompt = create_user_prompt(criteria)
             result = await self._run_agent_with_streaming(self.checklist_agent, prompt)
             
             # Track token usage if available
@@ -191,7 +173,6 @@ class ProjectEvaluator:
     async def evaluate_project(
         self,
         criteria_list: List[Union[ScoredCriteria, ChecklistCriteria]],
-        context: AnalysisContext,
     ) -> List[EvaluationResult]:
         """Evaluate all criteria for a project"""
         
@@ -210,7 +191,7 @@ class ProjectEvaluator:
             self.console.print(panel)
             
             try:
-                result = await self.evaluate_criteria(criteria, context)
+                result = await self.evaluate_criteria(criteria)
                 results.append(result)
                 
                 # Show result summary

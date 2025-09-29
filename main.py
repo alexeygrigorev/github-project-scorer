@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from models import load_criteria_from_yaml, ProjectEvaluation
 from repository_manager import RepositoryManager
 from file_analyzer import FileAnalyzer
-from evaluator import ProjectEvaluator, AnalysisContext
+from evaluator import ProjectEvaluator
 from report_generator import ReportGenerator, ImprovementGenerator
 
 # Load environment variables
@@ -85,14 +85,10 @@ class GitHubProjectScorer:
             print("Analyzing repository structure...")
             file_analyzer = FileAnalyzer(repo_path)
             evaluator = ProjectEvaluator(self.model_string, file_analyzer)
-            
-            # Gather context
-            context = await self._gather_analysis_context(repo_path, file_analyzer)
-            print(f"Found {context.file_stats['total_files']} files in repository")
-            
+
             # Evaluate criteria
             print("Starting evaluation...")
-            results = await evaluator.evaluate_project(criteria_list, context)
+            results = await evaluator.evaluate_project(criteria_list)
             
             # Calculate totals
             total_score = sum(result.score for result in results)
@@ -131,49 +127,6 @@ class GitHubProjectScorer:
         finally:
             if cleanup:
                 repo_manager.cleanup()
-    
-    async def _gather_analysis_context(self, repo_path: Path, file_analyzer: FileAnalyzer) -> AnalysisContext:
-        """Gather analysis context for evaluation"""
-        
-        # Get project files
-        project_files = file_analyzer.list_files(max_files=500)
-        
-        # Get config files
-        config_files = file_analyzer.find_config_files()
-        
-        # Get file statistics
-        file_stats = file_analyzer.get_file_stats()
-        
-        # Read README content
-        readme_content = ""
-        readme_files = file_analyzer.find_files_by_name("readme*")
-        if readme_files:
-            readme_content = file_analyzer.read_file(readme_files[0], max_lines=200)
-        
-        return AnalysisContext(
-            repo_path=repo_path,
-            file_analyzer=file_analyzer,
-            project_files=project_files,
-            config_files=config_files,
-            file_stats=file_stats,
-            readme_content=readme_content
-        )
-    
-    async def evaluate_multiple_repositories(self,
-                                           repo_urls: List[str],
-                                           criteria_path: Path,
-                                           output_dir: Optional[Path] = None) -> List[ProjectEvaluation]:
-        """Evaluate multiple repositories"""
-        
-        evaluations = []
-        for repo_url in repo_urls:
-            try:
-                evaluation, usage_tracker = await self.evaluate_repository(repo_url, criteria_path, output_dir)
-                evaluations.append(evaluation)
-            except Exception as e:
-                print(f"Error evaluating {repo_url}: {e}")
-        
-        return evaluations
 
 
 async def interactive_main():
