@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional
 import pathspec
 import nbformat
 from nbconvert import MarkdownExporter
@@ -161,44 +161,45 @@ class FileAnalyzer:
     
     def grep_files(self, 
                    pattern: str, 
-                   file_extensions: Optional[List[str]] = None,
+                   extensions: Optional[List[str]] = None,
                    case_sensitive: bool = False,
-                   max_matches: int = 100) -> Dict[Path, List[str]]:
+                   max_results: int = 100) -> Dict[str, List[str]]:
         """
         Search for pattern in files
         
         Args:
             pattern: Regex pattern to search for
-            file_extensions: File extensions to search in
+            extensions: File extensions to search in
             case_sensitive: Whether search should be case sensitive
-            max_matches: Maximum number of matches to return
+            max_results: Maximum number of matches to return
             
         Returns:
-            Dictionary mapping file paths to lists of matching lines
+            Dictionary mapping relative file paths to lists of matching lines
         """
         results = {}
         flags = 0 if case_sensitive else re.IGNORECASE
         regex = re.compile(pattern, flags)
         
-        files = self.list_files(extensions=file_extensions)
+        files = self.list_files(extensions=extensions)
         match_count = 0
         
-        for file_path in files:
-            if match_count >= max_matches:
+        for file_path_str in files:
+            if match_count >= max_results:
                 break
                 
+            full_path = self.repo_path / file_path_str
             try:
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
                     matches = []
                     for line_num, line in enumerate(f, 1):
                         if regex.search(line):
                             matches.append(f"Line {line_num}: {line.strip()}")
                             match_count += 1
-                            if match_count >= max_matches:
+                            if match_count >= max_results:
                                 break
                     
                     if matches:
-                        results[file_path] = matches
+                        results[file_path_str] = matches
             except Exception:
                 continue
         
