@@ -1,5 +1,4 @@
 from typing import List, Union
-from pathlib import Path
 
 from pydantic_ai.messages import (
     FinalResultEvent,
@@ -11,6 +10,8 @@ from rich.text import Text
 from rich.panel import Panel
 
 from models import ScoredCriteria, ChecklistCriteria, EvaluationResult
+from models import ScoredCriteriaResult, ChecklistResult
+
 from github_analyzer_tools import GithubAnalyzerTools
 from usage_tracker import UsageTracker
 from agent_factory import AnalysisContext, create_evaluation_agent, create_user_prompt
@@ -26,7 +27,6 @@ class ProjectEvaluator:
         self.console = Console()
         
         # Create agents for different criteria types
-        from models import ScoredCriteriaResult, ChecklistResult
         self.scored_agent = create_evaluation_agent(model_string, file_analyzer, ScoredCriteriaResult)
         self.checklist_agent = create_evaluation_agent(model_string, file_analyzer, ChecklistResult)
 
@@ -35,7 +35,7 @@ class ProjectEvaluator:
         
         if isinstance(criteria, ScoredCriteria):
             # Create user prompt for scored criteria
-            prompt = create_user_prompt(criteria, context)
+            prompt = create_user_prompt(criteria)
             result = await self._run_agent_with_streaming(self.scored_agent, prompt)
             
             # Track token usage if available
@@ -58,7 +58,7 @@ class ProjectEvaluator:
 
         elif isinstance(criteria, ChecklistCriteria):
             # Create user prompt for checklist criteria
-            prompt = create_user_prompt(criteria, context)
+            prompt = create_user_prompt(criteria)
             result = await self._run_agent_with_streaming(self.checklist_agent, prompt)
             
             # Track token usage if available
