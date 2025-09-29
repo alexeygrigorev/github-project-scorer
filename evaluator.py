@@ -1,3 +1,4 @@
+import json
 from typing import List, Union, Dict
 
 from pydantic_ai import Agent
@@ -144,7 +145,7 @@ class ProjectEvaluator:
                                     "list_files": "📁",
                                     "grep_files": "🔎",
                                     "find_config_files": "⚙️",
-                                    "check_file_exists": "✅",
+                                    # "check_file_exists": "✅",
                                 }
 
                                 emoji = tool_emojis.get(event.part.tool_name, "🔧")
@@ -152,21 +153,19 @@ class ProjectEvaluator:
                                 # Format args for display
                                 args_str = ""
                                 if event.part.args:
-                                    import json
-
                                     try:
                                         args_dict = json.loads(event.part.args)
                                         args_items = []
                                         for k, v in args_dict.items():
                                             if isinstance(v, str) and len(v) > 30:
                                                 v = v[:30] + "..."
-                                            args_items.append(f"[dim]{k}[/dim]={v}")
+                                            args_items.append(f"{k}={v}")
                                         args_str = (
-                                            f"([dim]{', '.join(args_items)}[/dim])"
+                                            f"({', '.join(args_items)})"
                                         )
                                     except:
                                         args_str = (
-                                            f"([dim]{event.part.args[:50]}...[/dim])"
+                                            f"({event.part.args[:50]}...)"
                                         )
 
                                 tool_text = Text(f"  {emoji} ")
@@ -190,9 +189,6 @@ class ProjectEvaluator:
 
         return result
 
-    def _display_tool_calls(self, criteria_name: str, result):
-        """Legacy method - now replaced by streaming"""
-        pass
 
     async def evaluate_project(
         self,
@@ -204,14 +200,28 @@ class ProjectEvaluator:
         total_criteria = len(criteria_list)
 
         for i, criteria in enumerate(criteria_list, 1):
+            details_str = ""
+            if isinstance(criteria, ScoredCriteria):
+                details_str = "Score levels:\n"
+                for level in criteria.score_levels:
+                    details_str += f"  • {level.score}: {level.description}\n"
+            elif isinstance(criteria, ChecklistCriteria):
+                details_str = f"Checklist items ({len(criteria.items)} total):\n"
+                for item in criteria.items:
+                    details_str += f"  • {item.description} ({item.points} pts)\n"
+            
             # Create a beautiful panel for each criteria
+            panel_content = (f"[bold]{criteria.name}[/bold]\n"
+                           f"Criteria {i} of {total_criteria}\n\n"
+                           f"{details_str.rstrip()}")
+            
             panel = Panel(
-                f"[bold]{criteria.name}[/bold]\n"
-                f"[dim]Criteria {i} of {total_criteria}[/dim]",
+                panel_content,
                 border_style="blue",
                 title="🎯 Evaluating",
-                title_align="left",
+                title_align="left"
             )
+
             self.console.print(panel)
 
             try:
