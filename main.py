@@ -1,3 +1,10 @@
+import os
+import sys
+
+# Set UTF-8 encoding for Windows compatibility
+if sys.platform == "win32":
+    os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
+
 import asyncio
 from pathlib import Path
 from typing import Optional, List

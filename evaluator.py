@@ -1,12 +1,6 @@
 from typing import List, Union
 
-from pydantic_ai.messages import (
-    FinalResultEvent,
-    FunctionToolCallEvent,
-    FunctionToolResultEvent,
-)
 from rich.console import Console
-from rich.text import Text
 from rich.panel import Panel
 
 from models import ScoredCriteria, ChecklistCriteria, EvaluationResult
@@ -24,18 +18,34 @@ class ProjectEvaluator:
         self.model = model
         self.analyzer_tools = analyzer_tools
         self.usage_tracker = UsageTracker()
-        self.console = Console()
         
-        # Create agents for different criteria types
-        self.agent = create_evaluation_agent(
-            self.model,
-            analyzer_tools
-        )
+        # Configure console for better Windows compatibility
+        import sys
+        import io
+        
+        if sys.platform == "win32":
+            # Create a UTF-8 compatible stdout wrapper for Windows
+            utf8_stdout = io.TextIOWrapper(
+                sys.stdout.buffer, 
+                encoding='utf-8', 
+                errors='replace'
+            )
+            self.console = Console(
+                file=utf8_stdout,
+                force_terminal=True, 
+                legacy_windows=False
+            )
+        else:
+            # For other platforms, use standard settings
+            self.console = Console(force_terminal=True, legacy_windows=False)
+        
+        # Create a single unified agent
+        self.agent = create_evaluation_agent(model, analyzer_tools)
 
     async def evaluate_criteria(self, criteria: Union[ScoredCriteria, ChecklistCriteria]) -> EvaluationResult:
         """Evaluate a single criteria against the repository"""
 
-        # Choose the appropriate agent and determine criteria type
+        # Determine criteria type and output type
         if isinstance(criteria, ScoredCriteria):
             criteria_type = "scored"
             output_type = ScoredCriteriaResult
@@ -43,16 +53,22 @@ class ProjectEvaluator:
             criteria_type = "checklist"
             output_type = ChecklistResult
 
-        # Run evaluation with the appropriate agent
+        # Run evaluation
         prompt = create_user_prompt(criteria)
-        result = await self._run_agent_with_streaming(prompt, output_type)
+        result = await self._run_agent(prompt, output_type)
+        
+        # Check if evaluation was successful
+        if result is None:
+            raise RuntimeError("Agent evaluation failed - no result returned")
 
-        usage = result.usage()
-        self.usage_tracker.add_usage(
-            model=self.model,
-            input_tokens=usage.input_tokens or 0,
-            output_tokens=usage.output_tokens or 0
-        )
+        # Track token usage if available
+        if hasattr(result, 'usage') and result.usage() is not None:
+            usage = result.usage()
+            self.usage_tracker.add_usage(
+                model=self.model,
+                input_tokens=usage.input_tokens or 0,
+                output_tokens=usage.output_tokens or 0
+            )
 
         # Calculate final score based on criteria type
         if isinstance(criteria, ChecklistCriteria):
@@ -76,53 +92,21 @@ class ProjectEvaluator:
             evidence=result.output.evidence,
         )
 
-    async def _run_agent_with_streaming(self, prompt: str, output_type) -> Union[ScoredCriteriaResult, ChecklistResult]:
+    async def _run_agent(self, prompt: str, output_type):
         """Run agent with real-time streaming tool calls"""
         self.console.print("  🤖 [bold blue]Starting evaluation...[/bold blue]")
 
-        async with self.agent.iter(prompt, output_type=output_type) as run:
-            result = None
-            async for node in run:
-                if isinstance(node, FinalResultEvent):
-                    result = node
-                    self.console.print("  ✅ [bold green]Evaluation complete![/bold green]")
-                    break
-                    
-                elif isinstance(node, FunctionToolCallEvent):
-                    # Map tool names to emojis for better visual feedback
-                    tool_emojis = {
-                        "read_file": "📖",
-                        "list_files": "📁", 
-                        "search_files": "🔍",
-                        "get_config_files": "⚙️",
-                        "get_file_stats": "📊",
-                    }
-                    
-                    emoji = tool_emojis.get(node.part.tool_name, "🔧")
-                    
-                    if node.part.args:
-                        import json
-                        try:
-                            args_dict = json.loads(node.part.args)
-                            args_items = []
-                            for k, v in args_dict.items():
-                                if isinstance(v, str) and len(v) > 30:
-                                    v = v[:30] + "..."
-                                args_items.append(f"{k}={v}")
-                            args_str = f"({', '.join(args_items)})"
-                        except:
-                            args_str = f"({node.part.args[:50]}...)"
-                    
-                    tool_text = Text(f"  {emoji} ")
-                    tool_text.append(node.part.tool_name, style="bold green")
-                    tool_text.append(args_str, style="dim")
-                    self.console.print(tool_text)
-                    
-                elif isinstance(node, FunctionToolResultEvent):
-                    # Don't show result output - too verbose
-                    pass
-                        
-        return result
+        try:
+            # For now, use the simple run method since streaming is complex
+            result = await self.agent.run(prompt, output_type=output_type)
+            self.console.print("  ✅ [bold green]Evaluation complete![/bold green]")
+            return result
+
+        except Exception as e:
+            self.console.print(f"  ❌ [bold red]Agent execution failed: {e}[/bold red]")
+            import traceback
+            traceback.print_exc()
+            return None
 
     async def evaluate_project(self, criteria_list: List[Union[ScoredCriteria, ChecklistCriteria]]) -> List[EvaluationResult]:
         """Evaluate all criteria with beautiful Rich display"""
