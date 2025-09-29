@@ -46,12 +46,13 @@ class AnalyzerTools:
                    exclude_patterns: Optional[List[str]] = None,
                    max_files: int = 1000) -> List[str]:
         """
-        List files in the repository
+        Get complete file list for repository overview.
+        Use a reasonable limit like max_files=100 for initial overview.
         
         Args:
             extensions: File extensions to include (e.g., ['.py', '.js'])
             exclude_patterns: Additional patterns to exclude
-            max_files: Maximum number of files to return
+            max_files: Maximum number of files to return (default 1000, suggest 100 for overview)
             
         Returns:
             List of relative file paths from repository root
@@ -109,14 +110,15 @@ class AnalyzerTools:
     
     def read_file(self, file_path: str, max_lines: int = 1000) -> str:
         """
-        Read file content safely
+        Read complete file content. Use this first for documentation and specific files.
+        More efficient than searching when you know the file path.
         
         Args:
-            file_path: Relative path from repository root (e.g., "notebooks/example.ipynb")
+            file_path: Relative path from repository root (e.g., "README.md", "docs/setup.md")
             max_lines: Maximum number of lines to read
             
         Returns:
-            File content as string. For .ipynb files, returns markdown format with cleared outputs.
+            Complete file content as string. For .ipynb files, returns markdown format with cleared outputs.
         """
         try:
             # Convert relative path to absolute path
@@ -159,13 +161,14 @@ class AnalyzerTools:
         except Exception as e:
             return f"Error reading file {file_path}: {e}"
     
-    def grep_files(self, 
+    def _grep_files(self, 
                    pattern: str, 
                    extensions: Optional[List[str]] = None,
                    case_sensitive: bool = False,
                    max_results: int = 100) -> Dict[str, List[str]]:
         """
-        Search for pattern in files
+        Search for patterns across multiple files. Use only when you need to search across many files.
+        For documentation criteria, prefer reading README.md directly with read_file().
         
         Args:
             pattern: Regex pattern to search for
@@ -204,52 +207,17 @@ class AnalyzerTools:
                 continue
         
         return results
-    
-    def find_config_files(self) -> Dict[str, Path]:
-        """Find common configuration files"""
-        config_files = {}
-        
-        common_configs = {
-            'requirements.txt': 'requirements.txt',
-            'pyproject.toml': 'pyproject.toml',
-            'setup.py': 'setup.py',
-            'package.json': 'package.json',
-            'Dockerfile': 'Dockerfile',
-            'docker-compose.yml': 'docker-compose.yml',
-            'docker-compose.yaml': 'docker-compose.yaml',
-            'README.md': 'README.md',
-            'README.rst': 'README.rst',
-            'README.txt': 'README.txt',
-            '.github/workflows': '.github/workflows',
-            'Makefile': 'Makefile',
-            'requirements-dev.txt': 'requirements-dev.txt',
-            'environment.yml': 'environment.yml'
-        }
-        
-        for name, path in common_configs.items():
-            full_path = self.repo_path / path
-            if full_path.exists():
-                config_files[name] = full_path
-        
-        return config_files
-    
-    def get_file_stats(self) -> Dict[str, int]:
-        """Get basic statistics about the repository"""
-        files = self.list_files()
-        
-        stats = {
-            'total_files': len(files),
-            'python_files': len([f for f in files if Path(f).suffix == '.py']),
-            'javascript_files': len([f for f in files if Path(f).suffix in ['.js', '.jsx', '.ts', '.tsx']]),
-            'config_files': len(self.find_config_files()),
-            'markdown_files': len([f for f in files if Path(f).suffix in ['.md', '.rst']]),
-            'notebook_files': len([f for f in files if Path(f).suffix == '.ipynb']),
-        }
-        
-        return stats
 
     def find_files_by_name(self, pattern: str) -> List[str]:
-        """Find files matching a name pattern"""
+        """
+        Find files matching a name pattern. Use to locate unknown file paths.
+        
+        Args:
+            pattern: Filename pattern to match (e.g., "README*", "*.md")
+            
+        Returns:
+            List of relative file paths matching the pattern
+        """
         import fnmatch
         files = self.list_files()
         return [f for f in files if fnmatch.fnmatch(Path(f).name.lower(), pattern.lower())]

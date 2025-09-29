@@ -139,12 +139,12 @@ class ProjectEvaluator:
                             if isinstance(event, FunctionToolCallEvent):
                                 # Tool emojis mapping
                                 tool_emojis = {
-                                    "get_file_stats": "📊",
+                                    # "get_file_stats": "📊",
                                     "find_files_by_name": "🔍",
                                     "read_file": "📖",
                                     "list_files": "📁",
                                     "grep_files": "🔎",
-                                    "find_config_files": "⚙️",
+                                    # "find_config_files": "⚙️",
                                     # "check_file_exists": "✅",
                                 }
 
