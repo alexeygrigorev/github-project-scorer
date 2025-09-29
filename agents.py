@@ -4,7 +4,7 @@ from typing import Union
 from pydantic_ai import Agent
 
 from models import ScoredCriteria, ChecklistCriteria
-from file_analyzer import FileAnalyzer
+from analyzer_tools import AnalyzerTools
 
 
 def get_instance_methods(instance):
@@ -131,7 +131,7 @@ def create_user_prompt(criteria: Union[ScoredCriteria, ChecklistCriteria]) -> st
         raise ValueError(f"Unknown criteria type: {type(criteria)}")
 
 
-def create_evaluation_agent(model_string: str, analyzer_tools: FileAnalyzer, output_type) -> Agent:
+def create_evaluation_agent(model_string: str, analyzer_tools: AnalyzerTools, output_type) -> Agent:
     """Create a unified evaluation agent for both scored and checklist criteria"""
     
     tools = get_instance_methods(analyzer_tools)

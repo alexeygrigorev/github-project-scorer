@@ -1,12 +1,12 @@
 import asyncio
 import os
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 from dotenv import load_dotenv
 
 from models import load_criteria_from_yaml, ProjectEvaluation
 from repository_manager import RepositoryManager
-from file_analyzer import FileAnalyzer
+from analyzer_tools import AnalyzerTools
 from evaluator import ProjectEvaluator
 from report_generator import ReportGenerator, ImprovementGenerator
 
@@ -83,8 +83,8 @@ class GitHubProjectScorer:
             
             # Setup file analyzer and evaluator
             print("Analyzing repository structure...")
-            file_analyzer = FileAnalyzer(repo_path)
-            evaluator = ProjectEvaluator(self.model_string, file_analyzer)
+            analyzer_tools = AnalyzerTools(repo_path)
+            evaluator = ProjectEvaluator(self.model_string, analyzer_tools)
 
             # Evaluate criteria
             print("Starting evaluation...")

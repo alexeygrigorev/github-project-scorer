@@ -10,28 +10,35 @@ from rich.console import Console
 from rich.text import Text
 from rich.panel import Panel
 
-from models import ScoredCriteria, ChecklistCriteria, EvaluationResult, ScoredCriteriaResult, ChecklistResult
-from file_analyzer import FileAnalyzer
+from models import (
+    ScoredCriteria,
+    ChecklistCriteria,
+    EvaluationResult,
+    ScoredCriteriaResult,
+    ChecklistResult,
+)
 from usage_tracker import UsageTracker
 
 from agents import create_evaluation_agent, create_user_prompt
-
+from analyzer_tools import AnalyzerTools
 
 class ProjectEvaluator:
     """Main evaluator that coordinates multiple agents"""
 
-    def __init__(self, model_string: str, file_analyzer: FileAnalyzer):
+    def __init__(self, model_string: str, analyzer_tools: AnalyzerTools):
         self.model_string = model_string
-        self.file_analyzer = file_analyzer
-        self.scored_agent = create_evaluation_agent(model_string, file_analyzer, ScoredCriteriaResult)
-        self.checklist_agent = create_evaluation_agent(model_string, file_analyzer, ChecklistResult)
+        self.analyzer_tools = analyzer_tools
+        self.scored_agent = create_evaluation_agent(
+            model_string, analyzer_tools, ScoredCriteriaResult
+        )
+        self.checklist_agent = create_evaluation_agent(
+            model_string, analyzer_tools, ChecklistResult
+        )
         self.usage_tracker = UsageTracker()
-        # Configure console for better Windows compatibility  
         self.console = Console(force_terminal=True, legacy_windows=False)
 
     async def evaluate_criteria(
-        self,
-        criteria: Union[ScoredCriteria, ChecklistCriteria]
+        self, criteria: Union[ScoredCriteria, ChecklistCriteria]
     ) -> EvaluationResult:
         """Evaluate a single criteria with streaming tool calls"""
 
@@ -39,16 +46,16 @@ class ProjectEvaluator:
             # Create user prompt for scored criteria
             prompt = create_user_prompt(criteria)
             result = await self._run_agent_with_streaming(self.scored_agent, prompt)
-            
+
             # Track token usage if available
-            if hasattr(result, 'usage') and result.usage() is not None:
+            if hasattr(result, "usage") and result.usage() is not None:
                 usage = result.usage()
                 self.usage_tracker.add_usage(
                     model=self.model_string,
                     input_tokens=usage.input_tokens or 0,
-                    output_tokens=usage.output_tokens or 0
+                    output_tokens=usage.output_tokens or 0,
                 )
-            
+
             return EvaluationResult(
                 criteria_name=criteria.name,
                 criteria_type="scored",
@@ -62,16 +69,16 @@ class ProjectEvaluator:
             # Create user prompt for checklist criteria
             prompt = create_user_prompt(criteria)
             result = await self._run_agent_with_streaming(self.checklist_agent, prompt)
-            
+
             # Track token usage if available
-            if hasattr(result, 'usage') and result.usage() is not None:
+            if hasattr(result, "usage") and result.usage() is not None:
                 usage = result.usage()
                 self.usage_tracker.add_usage(
                     model=self.model_string,
                     input_tokens=usage.input_tokens or 0,
-                    output_tokens=usage.output_tokens or 0
+                    output_tokens=usage.output_tokens or 0,
                 )
-            
+
             completed_items = result.output.completed_items
             score = sum(
                 criteria.items[i].points
@@ -89,12 +96,14 @@ class ProjectEvaluator:
             )
 
         else:
-            raise ValueError(f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria.")
+            raise ValueError(
+                f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria."
+            )
 
     async def _run_agent_with_streaming(self, agent: Agent, prompt: str):
         """Run agent with real-time streaming tool calls"""
         self.console.print("  🤖 [bold blue]Starting evaluation...[/bold blue]")
-        
+
         async with agent.iter(prompt) as run:
             result = None
             async for node in run:
@@ -103,19 +112,25 @@ class ProjectEvaluator:
                     pass
                 elif Agent.is_model_request_node(node):
                     # Model thinking/responding
-                    self.console.print("  🧠 [bold yellow]Model analyzing...[/bold yellow]")
+                    self.console.print(
+                        "  🧠 [bold yellow]Model analyzing...[/bold yellow]"
+                    )
                     async with node.stream(run.ctx) as request_stream:
                         final_result_found = False
                         async for event in request_stream:
                             if isinstance(event, FinalResultEvent):
-                                self.console.print("  ✨ [bold magenta]Generating final result...[/bold magenta]")
+                                self.console.print(
+                                    "  ✨ [bold magenta]Generating final result...[/bold magenta]"
+                                )
                                 final_result_found = True
                                 break
-                        
+
                         if final_result_found:
                             # For structured output, we can't stream text but we can show progress
-                            self.console.print("  📋 [bold cyan]Creating structured result...[/bold cyan]")
-                                    
+                            self.console.print(
+                                "  📋 [bold cyan]Creating structured result...[/bold cyan]"
+                            )
+
                 elif Agent.is_call_tools_node(node):
                     # Tool usage
                     async with node.stream(run.ctx) as handle_stream:
@@ -123,21 +138,22 @@ class ProjectEvaluator:
                             if isinstance(event, FunctionToolCallEvent):
                                 # Tool emojis mapping
                                 tool_emojis = {
-                                    'get_file_stats': '📊',
-                                    'find_files_by_name': '🔍',
-                                    'read_file': '📖',
-                                    'list_files': '📁',
-                                    'grep_files': '🔎',
-                                    'find_config_files': '⚙️',
-                                    'check_file_exists': '✅',
+                                    "get_file_stats": "📊",
+                                    "find_files_by_name": "🔍",
+                                    "read_file": "📖",
+                                    "list_files": "📁",
+                                    "grep_files": "🔎",
+                                    "find_config_files": "⚙️",
+                                    "check_file_exists": "✅",
                                 }
-                                
-                                emoji = tool_emojis.get(event.part.tool_name, '🔧')
-                                
+
+                                emoji = tool_emojis.get(event.part.tool_name, "🔧")
+
                                 # Format args for display
                                 args_str = ""
                                 if event.part.args:
                                     import json
+
                                     try:
                                         args_dict = json.loads(event.part.args)
                                         args_items = []
@@ -145,25 +161,33 @@ class ProjectEvaluator:
                                             if isinstance(v, str) and len(v) > 30:
                                                 v = v[:30] + "..."
                                             args_items.append(f"[dim]{k}[/dim]={v}")
-                                        args_str = f"([dim]{', '.join(args_items)}[/dim])"
+                                        args_str = (
+                                            f"([dim]{', '.join(args_items)}[/dim])"
+                                        )
                                     except:
-                                        args_str = f"([dim]{event.part.args[:50]}...[/dim])"
-                                
+                                        args_str = (
+                                            f"([dim]{event.part.args[:50]}...[/dim])"
+                                        )
+
                                 tool_text = Text(f"  {emoji} ")
-                                tool_text.append(event.part.tool_name, style="bold green")
+                                tool_text.append(
+                                    event.part.tool_name, style="bold green"
+                                )
                                 tool_text.append(args_str, style="dim")
                                 self.console.print(tool_text)
-                                
+
                             elif isinstance(event, FunctionToolResultEvent):
                                 # Don't show result output - too verbose
                                 pass
-                                    
+
                 elif Agent.is_end_node(node):
                     # Evaluation complete
                     assert run.result is not None
                     result = run.result
-                    self.console.print("  ✅ [bold green]Evaluation complete![/bold green]")
-                    
+                    self.console.print(
+                        "  ✅ [bold green]Evaluation complete![/bold green]"
+                    )
+
         return result
 
     def _display_tool_calls(self, criteria_name: str, result):
@@ -175,10 +199,10 @@ class ProjectEvaluator:
         criteria_list: List[Union[ScoredCriteria, ChecklistCriteria]],
     ) -> List[EvaluationResult]:
         """Evaluate all criteria for a project"""
-        
+
         results = []
         total_criteria = len(criteria_list)
-        
+
         for i, criteria in enumerate(criteria_list, 1):
             # Create a beautiful panel for each criteria
             panel = Panel(
@@ -186,28 +210,40 @@ class ProjectEvaluator:
                 f"[dim]Criteria {i} of {total_criteria}[/dim]",
                 border_style="blue",
                 title="🎯 Evaluating",
-                title_align="left"
+                title_align="left",
             )
             self.console.print(panel)
-            
+
             try:
                 result = await self.evaluate_criteria(criteria)
                 results.append(result)
-                
+
                 # Show result summary
-                score_color = "green" if result.score == result.max_score else "yellow" if result.score > 0 else "red"
-                self.console.print(f"  🎯 [bold {score_color}]Score: {result.score}/{result.max_score}[/bold {score_color}]")
-                self.console.print(f"  💭 [dim]{result.reasoning[:100]}{'...' if len(result.reasoning) > 100 else ''}[/dim]")
+                score_color = (
+                    "green"
+                    if result.score == result.max_score
+                    else "yellow"
+                    if result.score > 0
+                    else "red"
+                )
+                self.console.print(
+                    f"  🎯 [bold {score_color}]Score: {result.score}/{result.max_score}[/bold {score_color}]"
+                )
+                self.console.print(
+                    f"  💭 [dim]{result.reasoning[:100]}{'...' if len(result.reasoning) > 100 else ''}[/dim]"
+                )
                 self.console.print("")
-                
+
             except Exception as e:
-                self.console.print(f"  ❌ [bold red]Error evaluating {criteria.name}: {e}[/bold red]")
-                
+                self.console.print(
+                    f"  ❌ [bold red]Error evaluating {criteria.name}: {e}[/bold red]"
+                )
+
                 # Create a failed result
                 results.append(
                     EvaluationResult(
                         criteria_name=criteria.name,
-                        criteria_type=getattr(criteria, 'type', 'scored'),
+                        criteria_type=getattr(criteria, "type", "scored"),
                         score=0,
                         max_score=getattr(criteria, "max_score", 0),
                         reasoning=f"Evaluation failed: {e}",
@@ -218,11 +254,13 @@ class ProjectEvaluator:
 
         # Show final summary
         successful = len([r for r in results if r.score > 0])
-        self.console.print(Panel(
-            f"[bold green]✅ Evaluation complete![/bold green]\n"
-            f"[dim]Successfully evaluated {successful}/{total_criteria} criteria[/dim]",
-            border_style="green",
-            title="🎉 Summary"
-        ))
-        
+        self.console.print(
+            Panel(
+                f"[bold green]✅ Evaluation complete![/bold green]\n"
+                f"[dim]Successfully evaluated {successful}/{total_criteria} criteria[/dim]",
+                border_style="green",
+                title="🎉 Summary",
+            )
+        )
+
         return results
