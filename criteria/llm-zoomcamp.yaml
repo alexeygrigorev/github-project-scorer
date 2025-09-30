@@ -9,7 +9,7 @@ criteria:
       - score: 2
         description: "The problem is well-described and it's clear what problem the project solves"
 
-  - name: "Retrieval flow"
+  - name: "RAG flow"
     type: "scored"
     score_levels:
       - score: 0
@@ -17,7 +17,7 @@ criteria:
       - score: 1
         description: "No knowledge base is used, and the LLM is queried directly"
       - score: 2
-        description: "Both a knowledge base and an LLM are used in the flow"
+        description: "Both a knowledge base and an LLM are used in the RAG flow"
 
   - name: "Retrieval evaluation"
     type: "scored"
@@ -29,15 +29,15 @@ criteria:
       - score: 2
         description: "Multiple retrieval approaches are evaluated, and the best one is used"
 
-  - name: "LLM evaluation"
+  - name: "RAG evaluation"
     type: "scored"
     score_levels:
       - score: 0
-        description: "No evaluation of final LLM output is provided"
+        description: "No evaluation of RAG is provided"
       - score: 1
-        description: "Only one approach (e.g., one prompt) is evaluated"
+        description: "Only one RAG approach (e.g., one prompt) is evaluated"
       - score: 2
-        description: "Multiple approaches are evaluated, and the best one is used"
+        description: "Multiple RAG approaches are evaluated, and the best one is used"
 
   - name: "Interface"
     type: "scored"

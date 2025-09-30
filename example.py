@@ -20,9 +20,13 @@ async def test_scorer():
     
     try:
         # Run evaluation
+        # Use criteria/llm-zoomcamp.yaml or choose another course:
+        # - criteria/de-zoomcamp.yaml (Data Engineering)
+        # - criteria/ml-zoomcamp.yaml (Machine Learning)
+        # - criteria/mlops-zoomcamp.yaml (MLOps)
         evaluation = await scorer.evaluate_repository(
             repo_url=repo_url,
-            criteria_path=Path("criteria.yaml"),
+            criteria_path=Path("criteria/llm-zoomcamp.yaml"),
             output_dir=Path("./reports"),
             cleanup=True
         )

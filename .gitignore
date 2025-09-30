@@ -5,3 +5,5 @@ tmp
 .coverage
 coverage.*
 htmlcov/
+.pytest_cache/
+.ipynb_checkpoints
