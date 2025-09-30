@@ -33,25 +33,38 @@ Your mission is to thoroughly evaluate a GitHub repository and provide accurate 
 Your Task:
 1. Start by listing files to understand repository structure
 2. Read relevant files completely based on the criteria
-3. Use search tools only when you need to find patterns across multiple files
+3. Search content across files ONLY when absolutely necessary
 4. Gather concrete evidence and make your assessment
 5. Provide detailed reasoning with specific examples
 
+Tool Usage Guidelines:
+- **get_project_summary()**: Use FIRST to get a high-level overview of the project
+- **list_files()**: Use to see all files when you need the complete file list
+- **read_file()**: Use to read specific files (README, config files, code files)
+- **search_content(patterns)**: Use sparingly when searching patterns. Can accept a list of patterns to search multiple terms in ONE request
+- **find_files_by_name(pattern)**: Use VERY SPARINGLY. Supports multiple patterns with | symbol (e.g., "README*|LICENSE*|*.md")
+
+IMPORTANT: 
+- Do NOT use find_files_by_name() repeatedly for the same purpose
+- When searching for multiple file patterns, use | separator in ONE call: find_files_by_name("README*|*.md|LICENSE*")
+- When searching for multiple content patterns, pass them as a list to search_content() in ONE call
+- Use get_project_summary() or search_content() for better efficiency
 
 For documentation criteria: 
-- Read README.md or other documentation files directly
-- Use list_files() to see available files but only if needed
+- Read README.md directly with read_file("README.md")
+- Check for visuals by looking at the file list from list_files()
 
 For technical criteria:
-- Use list_files() to understand project structure
-- Read relevant code files or search across multiple files as needed
+- Use list_files() ONCE to understand project structure
+- Read specific files based on what you see in the file list
+- Only search across files when you must find patterns in multiple locations
 
 Investigation Guidelines:
-- Use list_files() when you need to understand the repository structure
-- One file read is better than multiple specific file searches
-- Don't search for file patterns when you can see the full file list
-- Be evidence-based: Your reasoning must cite specific files, code snippets, or observations
-- Sometimes deep investigation is not needed, especially for straightforward criteria
+- One list_files() call shows you everything - use it wisely
+- One file read is better than multiple file searches
+- Don't search for files when you already have the complete file list
+- Be evidence-based: Cite specific files, code snippets, or observations
+- Don't over-investigate - sometimes the answer is obvious from the structure
 
 """.strip()
 

@@ -165,47 +165,56 @@ class AnalyzerTools:
             return f"Error reading file {file_path}: {e}"
     
     def _grep_files(self, 
-                   pattern: str, 
+                   patterns: List[str], 
                    extensions: Optional[List[str]] = None,
                    case_sensitive: bool = False,
-                   max_results: int = 100) -> Dict[str, List[str]]:
+                   max_results: int = 100,
+                   max_files: int = 100) -> Dict[str, Dict[str, List[str]]]:
         """
-        Search for patterns across multiple files. Use only when you need to search across many files.
+        Search for multiple patterns across files. Use only when you need to search across many files.
         For documentation criteria, prefer reading README.md directly with read_file().
         
         Args:
-            pattern: Regex pattern to search for
+            patterns: List of regex patterns to search for
             extensions: File extensions to search in
             case_sensitive: Whether search should be case sensitive
-            max_results: Maximum number of matches to return
+            max_results: Maximum number of matches to return per pattern
+            max_files: Maximum number of files to return per pattern
             
         Returns:
-            Dictionary mapping relative file paths to lists of matching lines
+            Dictionary mapping patterns to {file_path: [matching_lines]}
         """
-        results = {}
         flags = 0 if case_sensitive else re.IGNORECASE
-        regex = re.compile(pattern, flags)
+        compiled_patterns = [(p, re.compile(p, flags)) for p in patterns]
+        
+        # Initialize results structure: {pattern: {file: [matches]}}
+        results = {pattern: {} for pattern in patterns}
+        pattern_counts = {pattern: 0 for pattern in patterns}
+        pattern_file_counts = {pattern: 0 for pattern in patterns}
         
         files = self.list_files(extensions=extensions)
-        match_count = 0
         
         for file_path_str in files:
-            if match_count >= max_results:
-                break
-                
             full_path = self.repo_path / file_path_str
             try:
                 with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    matches = []
-                    for line_num, line in enumerate(f, 1):
-                        if regex.search(line):
-                            matches.append(f"Line {line_num}: {line.strip()}")
-                            match_count += 1
-                            if match_count >= max_results:
-                                break
+                    file_matches = {pattern: [] for pattern in patterns}
                     
-                    if matches:
-                        results[file_path_str] = matches
+                    for line_num, line in enumerate(f, 1):
+                        for pattern, regex in compiled_patterns:
+                            if pattern_counts[pattern] >= max_results:
+                                continue
+                            
+                            if regex.search(line):
+                                file_matches[pattern].append(f"Line {line_num}: {line.strip()}")
+                                pattern_counts[pattern] += 1
+                    
+                    # Add file matches to results (respecting max_files limit)
+                    for pattern in patterns:
+                        if file_matches[pattern]:
+                            if pattern_file_counts[pattern] < max_files:
+                                results[pattern][file_path_str] = file_matches[pattern]
+                                pattern_file_counts[pattern] += 1
             except Exception:
                 continue
         
@@ -213,14 +222,112 @@ class AnalyzerTools:
 
     def find_files_by_name(self, pattern: str) -> List[str]:
         """
-        Find files matching a name pattern. Use to locate unknown file paths.
+        Find files matching name pattern(s). Use VERY SPARINGLY - only when you don't know file locations.
+        Prefer using list_files() to see all files, then read specific files.
         
         Args:
-            pattern: Filename pattern to match (e.g., "README*", "*.md")
+            pattern: Filename pattern to match. Supports:
+                - Single pattern: "README*" or "*.md"
+                - Multiple patterns with |: "README*|LICENSE*|*.md"
             
         Returns:
-            List of relative file paths matching the pattern
+            List of relative file paths matching any of the patterns
         """
         import fnmatch
         files = self.list_files()
-        return [f for f in files if fnmatch.fnmatch(Path(f).name.lower(), pattern.lower())]
+        
+        # Split patterns by | symbol
+        patterns = [p.strip() for p in pattern.split('|')]
+        
+        matched_files = []
+        for f in files:
+            filename_lower = Path(f).name.lower()
+            if any(fnmatch.fnmatch(filename_lower, p.lower()) for p in patterns):
+                matched_files.append(f)
+        
+        return matched_files
+    
+    def search_content(self, 
+                      patterns, 
+                      extensions: Optional[List[str]] = None,
+                      case_sensitive: bool = False,
+                      max_results: int = 50,
+                      max_files: int = 20):
+        """
+        Search for text patterns across repository files. Use sparingly - only when you need to find 
+        specific content across many files. For checking documentation, use read_file() instead.
+        
+        Args:
+            patterns: Single pattern string OR list of patterns to search for
+            extensions: Optional list of file extensions to search (e.g., ['.py', '.md'])
+            case_sensitive: Whether search should be case sensitive (default: False)
+            max_results: Maximum number of matching lines to return per pattern (default: 50)
+            max_files: Maximum number of files to return per pattern (default: 20)
+            
+        Returns:
+            If single pattern: Dictionary mapping file paths to lists of matching lines
+            If multiple patterns: Dictionary mapping patterns to {file_path: [matching_lines]}
+        """
+        # Handle single pattern for backward compatibility
+        if isinstance(patterns, str):
+            results = self._grep_files([patterns], extensions, case_sensitive, max_results, max_files)
+            # Return flat structure for single pattern
+            return results[patterns] if patterns in results else {}
+        
+        # Handle multiple patterns
+        return self._grep_files(patterns, extensions, case_sensitive, max_results, max_files)
+    
+    def get_project_summary(self) -> Dict[str, any]:
+        """
+        Get a high-level summary of the repository structure and key files.
+        Use this as a first step to understand the project before detailed analysis.
+        
+        Returns:
+            Dictionary containing:
+            - 'total_files': int - total number of files
+            - 'file_types': dict - count of files by extension
+            - 'key_files': list - important files (README, config, etc.)
+            - 'directories': list - main directory structure
+            - 'has_tests': bool - whether test files are present
+            - 'has_docs': bool - whether documentation exists
+        """
+        all_files = self.list_files()
+        
+        # Count file types
+        file_types = {}
+        key_files = []
+        directories = set()
+        
+        for file_path in all_files:
+            path = Path(file_path)
+            
+            # Count by extension
+            ext = path.suffix.lower() or 'no_extension'
+            file_types[ext] = file_types.get(ext, 0) + 1
+            
+            # Track directories (top level only)
+            if '/' in file_path or '\\' in file_path:
+                top_dir = str(path.parts[0]) if path.parts else ''
+                if top_dir:
+                    directories.add(top_dir)
+            
+            # Identify key files
+            name_lower = path.name.lower()
+            if any(key in name_lower for key in [
+                'readme', 'license', 'requirements', 'setup.py', 'pyproject.toml',
+                'package.json', 'docker', 'makefile', '.env', 'config'
+            ]):
+                key_files.append(file_path)
+        
+        # Check for tests and docs
+        has_tests = any('test' in f.lower() for f in all_files)
+        has_docs = any(any(doc in f.lower() for doc in ['readme', 'doc', 'docs']) for f in all_files)
+        
+        return {
+            'total_files': len(all_files),
+            'file_types': dict(sorted(file_types.items(), key=lambda x: x[1], reverse=True)[:10]),
+            'key_files': key_files,
+            'directories': sorted(list(directories)),
+            'has_tests': has_tests,
+            'has_docs': has_docs
+        }

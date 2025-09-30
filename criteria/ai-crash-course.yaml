@@ -1,10 +1,12 @@
 criteria:
   # Main must-have: Different dataset
   - name: "Dataset"
-    type: "checklist"
-    items:
-      - description: "The project does not use the FAQ dataset from https://github.com/DataTalksClub/faq"
-        points: 2
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "The project uses the FAQ dataset from https://github.com/DataTalksClub/faq"
+      - score: 2
+        description: "The project uses an original dataset"
 
   # Scored criteria for different aspects
   - name: "Data pipeline"
