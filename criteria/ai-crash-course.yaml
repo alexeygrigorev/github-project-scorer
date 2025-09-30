@@ -1,28 +1,81 @@
 criteria:
-  - name: "Must-have criteria"
+  # Main must-have: Different dataset
+  - name: "Dataset"
     type: "checklist"
     items:
-      - description: "The dataset used in the project is not https://github.com/DataTalksClub/faq"
-        points: 1
-      - description: "The project has a data processing pipeline"
-        points: 1
-      - description: "The agent code is stored separately and reusable, not in a Jupyter notebook"
-        points: 1
-      - description: "The project has evaluations for the agent"
-        points: 1
-      - description: "The project has a user interface in strealit or similar"
-        points: 1
-      - description: "The code is organized into manageable Python scripts (not everything in one big Jupyter notebook)"
-        points: 1
+      - description: "The project does not use the FAQ dataset from https://github.com/DataTalksClub/faq"
+        points: 2
 
-  - name: "README.md checklist"
+  # Scored criteria for different aspects
+  - name: "Data pipeline"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No data processing pipeline"
+      - score: 1
+        description: "Basic data loading with minimal processing"
+      - score: 2
+        description: "Well-structured data pipeline with ingestion, processing, and indexing steps"
+
+  - name: "Agent implementation"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No agent code or agent code is embedded in notebooks"
+      - score: 1
+        description: "Agent code exists but not well-organized or partially in notebooks"
+      - score: 2
+        description: "Agent code is modular, reusable, and stored in separate Python scripts/modules"
+
+  - name: "Agent evaluation"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No evaluation of the agent"
+      - score: 1
+        description: "Basic evaluation with simple metrics or manual testing"
+      - score: 2
+        description: "Comprehensive evaluation with metrics, test cases, and quality assessment"
+
+  - name: "User interface"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No user interface"
+      - score: 1
+        description: "Basic UI (simple script)"
+      - score: 2
+        description: "Interactive UI (Streamlit, Gradio, or web application)"
+
+  - name: "Code organization"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "Everything in one Jupyter notebook or unorganized scripts"
+      - score: 1
+        description: "Code is split into multiple files but organization could be improved"
+      - score: 2
+        description: "Well-organized codebase with clear separation of concerns (modules, functions, classes)"
+
+  - name: "Reproducibility"
+    type: "scored"
+    score_levels:
+      - score: 0
+        description: "No documentation on how to run the project"
+      - score: 1
+        description: "Basic instructions provided but incomplete or unclear"
+      - score: 2
+        description: "Clear setup instructions, dependency management, and easy to reproduce"
+
+  # Documentation checklist
+  - name: "Documentation quality"
     type: "checklist"
     items:
-      - description: "Clear goal and purpose of the project"
+      - description: "README has clear project goal and purpose"
         points: 1
-      - description: "Setup instructions"
+      - description: "README includes setup/installation instructions"
         points: 1
-      - description: "Usage examples"
+      - description: "README provides usage examples or quickstart guide"
         points: 1
-      - description: "Visuals like videos, images or gifs"
+      - description: "Project includes visuals (demo video, screenshots, or GIFs)"
         points: 1

@@ -7,6 +7,76 @@ from pathlib import Path
 from scorer.repository_manager import RepositoryManager
 
 
+class TestURLParsing:
+    """Test URL parsing functionality"""
+    
+    def test_parse_https_basic(self):
+        """Test parsing basic HTTPS URL"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("https://github.com/user/repo")
+        
+        assert canonical == "https://github.com/user/repo.git"
+        assert subfolder is None
+    
+    def test_parse_https_with_git(self):
+        """Test parsing HTTPS URL with .git extension"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("https://github.com/user/repo.git")
+        
+        assert canonical == "https://github.com/user/repo.git"
+        assert subfolder is None
+    
+    def test_parse_https_with_trailing_slash(self):
+        """Test parsing HTTPS URL with trailing slash"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("https://github.com/alexeygrigorev/aihero/")
+        
+        assert canonical == "https://github.com/alexeygrigorev/aihero.git"
+        assert subfolder is None
+    
+    def test_parse_https_with_tree_main(self):
+        """Test parsing HTTPS URL with /tree/main (no subfolder) - uses URL as-is"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("https://github.com/alexeygrigorev/aihero/tree/main")
+        
+        # URL patterns with /tree/branch but no subfolder are treated as-is
+        # They won't clone correctly, so this URL format should be avoided
+        assert canonical == "https://github.com/alexeygrigorev/aihero.git"
+        assert subfolder is None
+    
+    def test_parse_https_with_subfolder(self):
+        """Test parsing HTTPS URL with subfolder path"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("https://github.com/alexeygrigorev/aihero/tree/main/code")
+        
+        assert canonical == "https://github.com/alexeygrigorev/aihero.git"
+        assert subfolder == "code"
+    
+    def test_parse_https_with_deep_subfolder(self):
+        """Test parsing HTTPS URL with deep subfolder path"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("https://github.com/user/repo/tree/main/path/to/folder")
+        
+        assert canonical == "https://github.com/user/repo.git"
+        assert subfolder == "path/to/folder"
+    
+    def test_parse_ssh_basic(self):
+        """Test parsing SSH URL (git@)"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("git@github.com:alexeygrigorev/aihero.git")
+        
+        assert canonical == "https://github.com/alexeygrigorev/aihero.git"
+        assert subfolder is None
+    
+    def test_parse_ssh_without_git(self):
+        """Test parsing SSH URL without .git"""
+        manager = RepositoryManager()
+        canonical, subfolder = manager.parse_github_url("git@github.com:user/repo")
+        
+        assert canonical == "https://github.com/user/repo.git"
+        assert subfolder is None
+
+
 class TestRepositoryManager:
     def setup_method(self):
         """Set up test environment"""

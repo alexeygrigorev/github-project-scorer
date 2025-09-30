@@ -46,7 +46,7 @@ The interactive mode will ask you step-by-step for:
 
 1. **Repository URL** - GitHub repository to evaluate (text input)
 2. **Criteria file** - Choose from available criteria using arrow keys:
-   - `ai-crash-course.yaml` - AI Crash Course (2 criteria, 16 pts max)
+   - `ai-crash-course.yaml` - AI Crash Course (8 criteria, 18 pts max)
    - `de-zoomcamp.yaml` - Data Engineering Zoomcamp (8 criteria, 30 pts max)
    - `llm-zoomcamp.yaml` - LLM Zoomcamp (11 criteria, 26 pts max)
    - `ml-zoomcamp.yaml` - Machine Learning Zoomcamp (9 criteria, 16 pts max)
@@ -82,9 +82,11 @@ All criteria files are located in the `criteria/` folder. Each file defines eval
 ### Available Criteria Files
 
 1. **`criteria/ai-crash-course.yaml`** - AI Crash Course project evaluation
-   - Must-have: Different dataset, data pipeline, agent code, evaluations, UI, organized scripts
-   - README: Clear goal, setup instructions, usage examples, visuals
-   - Max: 16 points
+   - Dataset requirement (different from FAQ dataset)
+   - Data pipeline, agent implementation, agent evaluation
+   - User interface, code organization, reproducibility
+   - Documentation quality (README with visuals)
+   - Max: 18 points
 
 2. **`criteria/llm-zoomcamp.yaml`** - LLM Zoomcamp project evaluation
    - Problem description, RAG flow, retrieval/RAG evaluation
