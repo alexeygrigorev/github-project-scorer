@@ -1,8 +1,6 @@
-import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 from analyzer_tools import AnalyzerTools, NotebookMarkdownFormatter
 
@@ -64,7 +62,31 @@ class TestAnalyzerToolsBasic:
 class TestNotebookMarkdownFormatterBasic:
     def test_format_simple_notebook(self):
         """Test formatting a simple notebook"""
-        notebook_content = """{"cells": [{"cell_type": "markdown", "source": ["# Test Notebook\\n", "This is a test."]}, {"cell_type": "code", "source": ["print('hello')\\n", "x = 1"], "outputs": []}], "metadata": {}, "nbformat": 4, "nbformat_minor": 4}"""
+        notebook_content = """{
+            "cells": [
+                {
+                    "cell_type": "markdown",
+                    "metadata": {},
+                    "source": ["# Test Notebook\\n", "This is a test."]
+                },
+                {
+                    "cell_type": "code",
+                    "metadata": {},
+                    "source": ["print('hello')\\n", "x = 1"],
+                    "outputs": [],
+                    "execution_count": null
+                }
+            ],
+            "metadata": {
+                "kernelspec": {
+                    "display_name": "Python 3",
+                    "language": "python",
+                    "name": "python3"
+                }
+            },
+            "nbformat": 4,
+            "nbformat_minor": 4
+        }"""
         
         formatter = NotebookMarkdownFormatter()
         result = formatter.format(notebook_content)
