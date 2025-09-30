@@ -1,0 +1,28 @@
+criteria:
+  - name: "Must-have criteria"
+    type: "checklist"
+    items:
+      - description: "The dataset used in the project is not https://github.com/DataTalksClub/faq"
+        points: 1
+      - description: "The project has a data processing pipeline"
+        points: 1
+      - description: "The agent code is stored separately and reusable, not in a Jupyter notebook"
+        points: 1
+      - description: "The project has evaluations for the agent"
+        points: 1
+      - description: "The project has a user interface in strealit or similar"
+        points: 1
+      - description: "The code is organized into manageable Python scripts (not everything in one big Jupyter notebook)"
+        points: 1
+
+  - name: "README.md checklist"
+    type: "checklist"
+    items:
+      - description: "Clear goal and purpose of the project"
+        points: 1
+      - description: "Setup instructions"
+        points: 1
+      - description: "Usage examples"
+        points: 1
+      - description: "Visuals like videos, images or gifs"
+        points: 1

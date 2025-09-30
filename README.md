@@ -46,6 +46,7 @@ The interactive mode will ask you step-by-step for:
 
 1. **Repository URL** - GitHub repository to evaluate (text input)
 2. **Criteria file** - Choose from available criteria using arrow keys:
+   - `ai-crash-course.yaml` - AI Crash Course (2 criteria, 16 pts max)
    - `de-zoomcamp.yaml` - Data Engineering Zoomcamp (8 criteria, 30 pts max)
    - `llm-zoomcamp.yaml` - LLM Zoomcamp (11 criteria, 26 pts max)
    - `ml-zoomcamp.yaml` - Machine Learning Zoomcamp (9 criteria, 16 pts max)
@@ -80,26 +81,31 @@ All criteria files are located in the `criteria/` folder. Each file defines eval
 
 ### Available Criteria Files
 
-1. **`criteria/llm-zoomcamp.yaml`** - LLM Zoomcamp project evaluation
+1. **`criteria/ai-crash-course.yaml`** - AI Crash Course project evaluation
+   - Must-have: Different dataset, data pipeline, agent code, evaluations, UI, organized scripts
+   - README: Clear goal, setup instructions, usage examples, visuals
+   - Max: 16 points
+
+2. **`criteria/llm-zoomcamp.yaml`** - LLM Zoomcamp project evaluation
    - Problem description, RAG flow, retrieval/RAG evaluation
    - Interface, ingestion pipeline, monitoring
    - Containerization, reproducibility
    - Best practices (hybrid search, re-ranking, query rewriting)
    - Max: 26 points
 
-2. **`criteria/de-zoomcamp.yaml`** - Data Engineering Zoomcamp
+3. **`criteria/de-zoomcamp.yaml`** - Data Engineering Zoomcamp
    - Cloud infrastructure, batch/streaming ingestion
    - Transformations, SQL, reproducibility
    - Best practices
    - Max: 30 points
 
-3. **`criteria/ml-zoomcamp.yaml`** - Machine Learning Zoomcamp
+4. **`criteria/ml-zoomcamp.yaml`** - Machine Learning Zoomcamp
    - Problem description, EDA, model training
    - Experiment tracking, reproducibility
    - Best practices (testing, linting, CI/CD)
    - Max: 16 points
 
-4. **`criteria/mlops-zoomcamp.yaml`** - MLOps Zoomcamp
+5. **`criteria/mlops-zoomcamp.yaml`** - MLOps Zoomcamp
    - Problem description, cloud deployment
    - Experiment tracking, workflow orchestration
    - Model deployment, monitoring, best practices
@@ -238,6 +244,7 @@ github-project-scorer/
 │   ├── report_generator.py   # Report generation and formatting
 │   └── usage_tracker.py      # Token usage and cost tracking
 ├── criteria/                  # Evaluation criteria files
+│   ├── ai-crash-course.yaml
 │   ├── llm-zoomcamp.yaml
 │   ├── de-zoomcamp.yaml
 │   ├── ml-zoomcamp.yaml
