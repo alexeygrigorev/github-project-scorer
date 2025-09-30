@@ -1,7 +1,8 @@
-from dataclasses import dataclass
-from typing import List, Union
-from pathlib import Path
 import yaml
+
+from typing import List, Union
+from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass

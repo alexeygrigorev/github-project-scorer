@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 import yaml
 
-from models import (
+from scorer.models import (
     ScoredCriteria, 
     ChecklistCriteria, 
     ScoreLevel, 

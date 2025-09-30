@@ -3,7 +3,7 @@ Example usage of the GitHub Project Scorer
 """
 import asyncio
 from pathlib import Path
-from main import GitHubProjectScorer
+from scorer.main import GitHubProjectScorer
 
 
 async def test_scorer():

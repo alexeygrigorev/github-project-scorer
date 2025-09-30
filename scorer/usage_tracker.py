@@ -1,7 +1,8 @@
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict
 import yaml
+
+from typing import Dict
+from pathlib import Path
+from dataclasses import dataclass, field
 
 
 @dataclass

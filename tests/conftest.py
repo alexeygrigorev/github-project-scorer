@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest.mock import Mock
 import json
 
-from models import ScoredCriteria, ChecklistCriteria, ScoreLevel, ChecklistItem
-from analyzer_tools import AnalyzerTools
+from scorer.models import ScoredCriteria, ChecklistCriteria, ScoreLevel, ChecklistItem
+from scorer.analyzer_tools import AnalyzerTools
 
 
 @pytest.fixture

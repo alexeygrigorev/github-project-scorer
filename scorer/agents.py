@@ -3,8 +3,8 @@ from typing import Union
 
 from pydantic_ai import Agent
 
-from models import ScoredCriteria, ChecklistCriteria
-from analyzer_tools import AnalyzerTools
+from scorer.models import ScoredCriteria, ChecklistCriteria
+from scorer.analyzer_tools import AnalyzerTools
 
 
 def get_instance_methods(instance):

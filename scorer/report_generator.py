@@ -1,12 +1,12 @@
 from typing import List
 from datetime import datetime
 from pathlib import Path
-from models import ProjectEvaluation, EvaluationResult
+
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.text import Text
-from rich.markdown import Markdown
+
+from scorer.models import ProjectEvaluation, EvaluationResult
 
 
 class ReportGenerator:

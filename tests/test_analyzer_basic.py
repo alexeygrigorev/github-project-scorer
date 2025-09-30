@@ -2,7 +2,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from analyzer_tools import AnalyzerTools, NotebookMarkdownFormatter
+from scorer.analyzer_tools import AnalyzerTools, NotebookMarkdownFormatter
 
 
 class TestAnalyzerToolsBasic:

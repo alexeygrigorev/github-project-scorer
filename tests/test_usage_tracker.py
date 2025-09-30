@@ -4,7 +4,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from usage_tracker import UsageTracker, ProgressTracker, TokenUsage
+from scorer.usage_tracker import UsageTracker, ProgressTracker, TokenUsage
 
 
 class TestTokenUsage:

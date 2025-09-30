@@ -12,17 +12,16 @@ from rich.console import Console
 from rich.text import Text
 from rich.panel import Panel
 
-from models import (
+from scorer.models import (
     ScoredCriteria,
     ChecklistCriteria,
     EvaluationResult,
     ScoredCriteriaResult,
     ChecklistResult,
 )
-from usage_tracker import UsageTracker
-
-from agents import create_evaluation_agent, create_user_prompt
-from analyzer_tools import AnalyzerTools
+from scorer.usage_tracker import UsageTracker
+from scorer.agents import create_evaluation_agent, create_user_prompt
+from scorer.analyzer_tools import AnalyzerTools
 
 
 class CriteriaWrapper(ABC):

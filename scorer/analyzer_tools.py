@@ -1,9 +1,12 @@
 import os
 import re
+
 from pathlib import Path
 from typing import List, Dict, Optional
+
 import pathspec
 import nbformat
+
 from nbconvert import MarkdownExporter
 from nbconvert.preprocessors import ClearOutputPreprocessor
 

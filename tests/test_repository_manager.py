@@ -4,7 +4,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from repository_manager import RepositoryManager
+from scorer.repository_manager import RepositoryManager
 
 
 class TestRepositoryManager:

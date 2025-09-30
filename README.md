@@ -151,9 +151,9 @@ uv run pytest --cov=. --cov-report=html
 uv run pytest tests/test_models.py
 ```
 
-**Current Coverage**: 30.43%
+**Current Coverage**: 50.00%
 - `usage_tracker.py`: 95.10%
-- `repository_manager.py`: 86.21%
+- `repository_manager.py`: 85.96%
 - `models.py`: 84.52%
 - `analyzer_tools.py`: 39.05%
 
@@ -162,7 +162,7 @@ uv run pytest tests/test_models.py
 ```python
 import asyncio
 from pathlib import Path
-from main import GitHubProjectScorer
+from scorer import GitHubProjectScorer
 
 async def evaluate_project():
     scorer = GitHubProjectScorer(
@@ -222,12 +222,45 @@ Real-time progress bar shows:
 
 ## Architecture
 
-- `models.py`: Data models and YAML loading
-- `repository_manager.py`: GitHub repository cloning and cleanup
-- `analyzer_tools.py`: Repository file analysis tools
-- `agents.py`: Pydantic AI agent creation and prompts
-- `evaluator.py`: Project evaluation orchestration with streaming
-- `report_generator.py`: Report generation and formatting
-- `usage_tracker.py`: Token usage and cost tracking
-- `main.py`: Main orchestrator and CLI interface
-- `tests/`: Comprehensive test suite with pytest
+### Project Structure
+
+```
+github-project-scorer/
+├── main.py                    # Simple entry point (delegates to scorer.main)
+├── scorer/                    # Main package
+│   ├── __init__.py
+│   ├── main.py               # CLI interface and orchestrator
+│   ├── models.py             # Data models and YAML loading
+│   ├── repository_manager.py # GitHub repository cloning and cleanup
+│   ├── analyzer_tools.py     # Repository file analysis tools
+│   ├── agents.py             # Pydantic AI agent creation and prompts
+│   ├── evaluator.py          # Project evaluation orchestration with streaming
+│   ├── report_generator.py   # Report generation and formatting
+│   └── usage_tracker.py      # Token usage and cost tracking
+├── criteria/                  # Evaluation criteria files
+│   ├── llm-zoomcamp.yaml
+│   ├── de-zoomcamp.yaml
+│   ├── ml-zoomcamp.yaml
+│   └── mlops-zoomcamp.yaml
+├── tests/                     # Comprehensive test suite with pytest
+│   ├── conftest.py
+│   ├── test_models.py
+│   ├── test_usage_tracker.py
+│   ├── test_repository_manager.py
+│   └── test_analyzer_basic.py
+├── example.py                 # Example usage
+├── pricing.yaml               # Model pricing configuration
+└── pyproject.toml             # Project dependencies and configuration
+```
+
+### Module Responsibilities
+
+- **`main.py`**: Simple entry point that delegates to `scorer.main`
+- **`scorer/main.py`**: CLI interface, argument parsing, and evaluation orchestration
+- **`scorer/models.py`**: Pydantic data models and YAML criteria loading
+- **`scorer/repository_manager.py`**: Git operations and temporary directory management
+- **`scorer/analyzer_tools.py`**: File reading, notebook formatting, and repository analysis
+- **`scorer/agents.py`**: Pydantic AI agent creation with dynamic tool registration
+- **`scorer/evaluator.py`**: Evaluation workflow with streaming progress display
+- **`scorer/report_generator.py`**: Console and file report generation
+- **`scorer/usage_tracker.py`**: Token counting and cost calculation with pricing lookup
