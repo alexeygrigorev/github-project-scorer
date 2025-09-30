@@ -1,5 +1,6 @@
 import json
 from typing import List, Union
+from abc import ABC, abstractmethod
 
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
@@ -22,6 +23,87 @@ from usage_tracker import UsageTracker
 
 from agents import create_evaluation_agent, create_user_prompt
 from analyzer_tools import AnalyzerTools
+
+
+class CriteriaWrapper(ABC):
+    """Abstract base class for criteria wrappers"""
+    
+    def __init__(self, criteria, agent):
+        self.criteria = criteria
+        self.agent = agent
+    
+    @abstractmethod
+    def calculate_score(self, result) -> int:
+        """Calculate score from agent result"""
+        pass
+    
+    @property
+    def name(self) -> str:
+        return self.criteria.name
+    
+    @property
+    def max_score(self) -> int:
+        return self.criteria.max_score
+    
+    def create_prompt(self) -> str:
+        return create_user_prompt(self.criteria)
+    
+    def create_evaluation_result(self, score: int, result) -> EvaluationResult:
+        return EvaluationResult(
+            criteria_name=self.criteria.name,
+            criteria_type=self.get_criteria_type(),
+            score=score,
+            max_score=self.criteria.max_score,
+            reasoning=result.output.reasoning,
+            evidence=result.output.evidence,
+        )
+    
+    @abstractmethod
+    def get_criteria_type(self) -> str:
+        """Return the criteria type string"""
+        pass
+    
+    @abstractmethod
+    def get_display_details(self) -> str:
+        """Return details for display in evaluation panel"""
+        pass
+
+
+class ScoredCriteriaWrapper(CriteriaWrapper):
+    """Wrapper for scored criteria"""
+    
+    def calculate_score(self, result) -> int:
+        return result.output.score
+    
+    def get_criteria_type(self) -> str:
+        return "scored"
+    
+    def get_display_details(self) -> str:
+        details = "Score levels:\n"
+        for level in self.criteria.score_levels:
+            details += f"  • {level.score}: {level.description}\n"
+        return details
+
+
+class ChecklistCriteriaWrapper(CriteriaWrapper):
+    """Wrapper for checklist criteria"""
+    
+    def calculate_score(self, result) -> int:
+        completed_items = result.output.completed_items
+        return sum(
+            self.criteria.items[i].points
+            for i in completed_items
+            if i < len(self.criteria.items)
+        )
+    
+    def get_criteria_type(self) -> str:
+        return "checklist"
+    
+    def get_display_details(self) -> str:
+        details = f"Checklist items ({len(self.criteria.items)} total):\n"
+        for item in self.criteria.items:
+            details += f"  • {item.description} ({item.points} pts)\n"
+        return details
 
 
 class StreamingResultDisplay:
@@ -121,47 +203,35 @@ class ProjectEvaluator:
         )
         self.usage_tracker = UsageTracker()
         self.console = Console(force_terminal=True, legacy_windows=False)
+        self.display = StreamingResultDisplay(self.console)
+
+    def _create_criteria_wrapper(self, criteria: Union[ScoredCriteria, ChecklistCriteria]) -> CriteriaWrapper:
+        """Create appropriate wrapper for criteria"""
+        if isinstance(criteria, ScoredCriteria):
+            return ScoredCriteriaWrapper(criteria, self.scored_agent)
+        elif isinstance(criteria, ChecklistCriteria):
+            return ChecklistCriteriaWrapper(criteria, self.checklist_agent)
+        else:
+            raise ValueError(
+                f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria."
+            )
 
     async def evaluate_criteria(
         self, criteria: Union[ScoredCriteria, ChecklistCriteria]
     ) -> EvaluationResult:
         """Evaluate a single criteria with streaming tool calls"""
 
-        # Choose the right agent and create prompt
-        if isinstance(criteria, ScoredCriteria):
-            agent = self.scored_agent
-            prompt = create_user_prompt(criteria)
-        elif isinstance(criteria, ChecklistCriteria):
-            agent = self.checklist_agent
-            prompt = create_user_prompt(criteria)
-        else:
-            raise ValueError(
-                f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria."
-            )
-
+        # Create wrapper to handle polymorphic behavior
+        wrapper = self._create_criteria_wrapper(criteria)
+        
         # Run the agent
-        result = await self._run_agent_with_streaming(agent, prompt)
+        result = await self._run_agent_with_streaming(wrapper.agent, wrapper.create_prompt())
         self._display_and_track_usage(result)
 
-        # Calculate score based on criteria type
-        if isinstance(criteria, ScoredCriteria):
-            score = result.output.score
-        elif isinstance(criteria, ChecklistCriteria):
-            completed_items = result.output.completed_items
-            score = sum(
-                criteria.items[i].points
-                for i in completed_items
-                if i < len(criteria.items)
-            )
+        # Calculate score using polymorphism
+        score = wrapper.calculate_score(result)
 
-        return EvaluationResult(
-            criteria_name=criteria.name,
-            criteria_type="scored" if isinstance(criteria, ScoredCriteria) else "checklist",
-            score=score,
-            max_score=criteria.max_score,
-            reasoning=result.output.reasoning,
-            evidence=result.output.evidence,
-        )
+        return wrapper.create_evaluation_result(score, result)
     
     def _display_and_track_usage(self, result):
         # Track token usage and show cost
@@ -195,8 +265,7 @@ class ProjectEvaluator:
 
     async def _run_agent_with_streaming(self, agent: Agent, prompt: str):
         """Run agent with streaming display"""
-        display = StreamingResultDisplay(self.console)
-        return await display.run_agent_with_streaming(agent, prompt)
+        return await self.display.run_agent_with_streaming(agent, prompt)
 
 
     async def evaluate_project(
@@ -209,18 +278,12 @@ class ProjectEvaluator:
         total_criteria = len(criteria_list)
 
         for i, criteria in enumerate(criteria_list, 1):
-            details_str = ""
-            if isinstance(criteria, ScoredCriteria):
-                details_str = "Score levels:\n"
-                for level in criteria.score_levels:
-                    details_str += f"  • {level.score}: {level.description}\n"
-            elif isinstance(criteria, ChecklistCriteria):
-                details_str = f"Checklist items ({len(criteria.items)} total):\n"
-                for item in criteria.items:
-                    details_str += f"  • {item.description} ({item.points} pts)\n"
+            # Create wrapper to get display details polymorphically
+            wrapper = self._create_criteria_wrapper(criteria)
+            details_str = wrapper.get_display_details()
             
             # Create a beautiful panel for each criteria
-            panel_content = (f"[bold]{criteria.name}[/bold]\n"
+            panel_content = (f"[bold]{wrapper.name}[/bold]\n"
                            f"Criteria {i} of {total_criteria}\n\n"
                            f"{details_str.rstrip()}")
             
