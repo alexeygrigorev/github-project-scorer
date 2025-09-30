@@ -32,8 +32,10 @@ class UsageTracker:
                 'default': {'input': 1.0, 'output': 3.0}
             }
     
-    def add_usage(self, model: str, input_tokens: int, output_tokens: int):
-        """Add usage for a model"""
+    def add_usage(self, model: str, usage): 
+        input_tokens = usage.input_tokens or 0
+        output_tokens = usage.output_tokens or 0
+
         self.total_input_tokens += input_tokens
         self.total_output_tokens += output_tokens
         

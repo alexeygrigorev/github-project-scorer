@@ -43,43 +43,26 @@ class ProjectEvaluator:
     ) -> EvaluationResult:
         """Evaluate a single criteria with streaming tool calls"""
 
+        # Choose the right agent and create prompt
         if isinstance(criteria, ScoredCriteria):
-            # Create user prompt for scored criteria
+            agent = self.scored_agent
             prompt = create_user_prompt(criteria)
-            result = await self._run_agent_with_streaming(self.scored_agent, prompt)
-
-            # Track token usage if available
-            if hasattr(result, "usage") and result.usage() is not None:
-                usage = result.usage()
-                self.usage_tracker.add_usage(
-                    model=self.model_string,
-                    input_tokens=usage.input_tokens or 0,
-                    output_tokens=usage.output_tokens or 0,
-                )
-
-            return EvaluationResult(
-                criteria_name=criteria.name,
-                criteria_type="scored",
-                score=result.output.score,
-                max_score=criteria.max_score,
-                reasoning=result.output.reasoning,
-                evidence=result.output.evidence,
+        elif isinstance(criteria, ChecklistCriteria):
+            agent = self.checklist_agent
+            prompt = create_user_prompt(criteria)
+        else:
+            raise ValueError(
+                f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria."
             )
 
+        # Run the agent
+        result = await self._run_agent_with_streaming(agent, prompt)
+        self._display_and_track_usage(result)
+
+        # Calculate score based on criteria type
+        if isinstance(criteria, ScoredCriteria):
+            score = result.output.score
         elif isinstance(criteria, ChecklistCriteria):
-            # Create user prompt for checklist criteria
-            prompt = create_user_prompt(criteria)
-            result = await self._run_agent_with_streaming(self.checklist_agent, prompt)
-
-            # Track token usage if available
-            if hasattr(result, "usage") and result.usage() is not None:
-                usage = result.usage()
-                self.usage_tracker.add_usage(
-                    model=self.model_string,
-                    input_tokens=usage.input_tokens or 0,
-                    output_tokens=usage.output_tokens or 0,
-                )
-
             completed_items = result.output.completed_items
             score = sum(
                 criteria.items[i].points
@@ -87,19 +70,44 @@ class ProjectEvaluator:
                 if i < len(criteria.items)
             )
 
-            return EvaluationResult(
-                criteria_name=criteria.name,
-                criteria_type="checklist",
-                score=score,
-                max_score=criteria.max_score,
-                reasoning=result.output.reasoning,
-                evidence=result.output.evidence,
-            )
+        return EvaluationResult(
+            criteria_name=criteria.name,
+            criteria_type="scored" if isinstance(criteria, ScoredCriteria) else "checklist",
+            score=score,
+            max_score=criteria.max_score,
+            reasoning=result.output.reasoning,
+            evidence=result.output.evidence,
+        )
+    
+    def _display_and_track_usage(self, result):
+        # Track token usage and show cost
+        if not hasattr(result, "usage"):
+            return
 
-        else:
-            raise ValueError(
-                f"Unknown criteria type: {type(criteria)}. Expected ScoredCriteria or ChecklistCriteria."
-            )
+        usage = result.usage()
+        if usage is None:
+            return
+
+        self._display_cost(usage)
+        self.usage_tracker.add_usage(
+            model=self.model_string,
+            usage=usage
+        )
+
+
+    def _display_cost(self, usage):
+        temp_tracker = UsageTracker()
+        temp_tracker.pricing = self.usage_tracker.pricing
+        temp_tracker.add_usage(self.model_string, usage)
+        criteria_cost = temp_tracker.calculate_cost()
+
+        input_tokens = usage.input_tokens or 0
+        output_tokens = usage.output_tokens or 0
+
+        self.console.print(
+            f"  💰 [dim]Tokens: {input_tokens:,} input + {output_tokens:,} output | Cost: ${criteria_cost:.4f}[/dim]"
+        )
+
 
     async def _run_agent_with_streaming(self, agent: Agent, prompt: str):
         """Run agent with real-time streaming tool calls"""
@@ -186,23 +194,6 @@ class ProjectEvaluator:
                     self.console.print(
                         "  ✅ [bold green]Evaluation complete![/bold green]"
                     )
-
-        # Show cost after streaming is complete
-        if result and hasattr(result, "usage") and result.usage() is not None:
-            usage = result.usage()
-            input_tokens = usage.input_tokens or 0
-            output_tokens = usage.output_tokens or 0
-            
-            if input_tokens > 0 or output_tokens > 0:
-                # Create temporary usage tracker to calculate cost for this request only
-                temp_tracker = UsageTracker()
-                temp_tracker.pricing = self.usage_tracker.pricing
-                temp_tracker.add_usage(self.model_string, input_tokens, output_tokens)
-                request_cost = temp_tracker.calculate_cost()
-                
-                self.console.print(
-                    f"  💰 [dim]Tokens: {input_tokens:,} input + {output_tokens:,} output | Cost: ${request_cost:.4f}[/dim]"
-                )
 
         return result
 
