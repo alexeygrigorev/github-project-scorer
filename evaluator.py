@@ -1,5 +1,5 @@
 import json
-from typing import List, Union, Dict
+from typing import List, Union
 
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
@@ -22,6 +22,90 @@ from usage_tracker import UsageTracker
 
 from agents import create_evaluation_agent, create_user_prompt
 from analyzer_tools import AnalyzerTools
+
+
+class StreamingResultDisplay:
+    """Handles streaming display of agent execution"""
+    
+    def __init__(self, console: Console):
+        self.console = console
+        self.tool_emojis = {
+            "find_files_by_name": "🔍",
+            "read_file": "📖",
+            "list_files": "📁",
+            "grep_files": "🔎",
+        }
+    
+    async def run_agent_with_streaming(self, agent: Agent, prompt: str):
+        """Run agent and display streaming results"""
+        self.console.print("  🤖 [bold blue]Starting evaluation...[/bold blue]")
+
+        async with agent.iter(prompt) as run:
+            result = None
+            async for node in run:
+                if Agent.is_user_prompt_node(node):
+                    # User prompt submitted
+                    pass
+                elif Agent.is_model_request_node(node):
+                    await self._handle_model_request(node, run)
+                elif Agent.is_call_tools_node(node):
+                    await self._handle_tool_calls(node, run)
+                elif Agent.is_end_node(node):
+                    result = self._handle_completion(run)
+
+        return result
+    
+    async def _handle_model_request(self, node, run):
+        """Handle model thinking/responding"""
+        self.console.print("  🧠 [bold yellow]Model analyzing...[/bold yellow]")
+        
+        async with node.stream(run.ctx) as request_stream:
+            async for event in request_stream:
+                if isinstance(event, FinalResultEvent):
+                    self.console.print("  ✨ [bold magenta]Generating final result...[/bold magenta]")
+                    self.console.print("  📋 [bold cyan]Creating structured result...[/bold cyan]")
+                    break
+    
+    async def _handle_tool_calls(self, node, run):
+        """Handle tool usage display"""
+        async with node.stream(run.ctx) as handle_stream:
+            async for event in handle_stream:
+                if isinstance(event, FunctionToolCallEvent):
+                    self._display_tool_call(event)
+                elif isinstance(event, FunctionToolResultEvent):
+                    # Don't show result output - too verbose
+                    pass
+    
+    def _display_tool_call(self, event):
+        """Display a single tool call"""
+        emoji = self.tool_emojis.get(event.part.tool_name, "🔧")
+        
+        # Format args for display
+        args_str = ""
+        if event.part.args:
+            try:
+                args_dict = json.loads(event.part.args)
+                args_items = []
+                for k, v in args_dict.items():
+                    if isinstance(v, str) and len(v) > 30:
+                        v = v[:30] + "..."
+                    args_items.append(f"{k}={v}")
+                args_str = f"({', '.join(args_items)})"
+            except:
+                args_str = f"({event.part.args[:50]}...)"
+
+        tool_text = Text(f"  {emoji} ")
+        tool_text.append(event.part.tool_name, style="bold green")
+        tool_text.append(args_str, style="dim")
+        self.console.print(tool_text)
+    
+    def _handle_completion(self, run):
+        """Handle evaluation completion"""
+        assert run.result is not None
+        result = run.result
+        self.console.print("  ✅ [bold green]Evaluation complete![/bold green]")
+        return result
+
 
 class ProjectEvaluator:
     """Main evaluator that coordinates multiple agents"""
@@ -110,92 +194,9 @@ class ProjectEvaluator:
 
 
     async def _run_agent_with_streaming(self, agent: Agent, prompt: str):
-        """Run agent with real-time streaming tool calls"""
-        self.console.print("  🤖 [bold blue]Starting evaluation...[/bold blue]")
-
-        async with agent.iter(prompt) as run:
-            result = None
-            async for node in run:
-                if Agent.is_user_prompt_node(node):
-                    # User prompt submitted
-                    pass
-                elif Agent.is_model_request_node(node):
-                    # Model thinking/responding
-                    self.console.print(
-                        "  🧠 [bold yellow]Model analyzing...[/bold yellow]"
-                    )
-                    async with node.stream(run.ctx) as request_stream:
-                        final_result_found = False
-                        async for event in request_stream:
-                            if isinstance(event, FinalResultEvent):
-                                self.console.print(
-                                    "  ✨ [bold magenta]Generating final result...[/bold magenta]"
-                                )
-                                final_result_found = True
-                                break
-
-                        if final_result_found:
-                            # For structured output, we can't stream text but we can show progress
-                            self.console.print(
-                                "  📋 [bold cyan]Creating structured result...[/bold cyan]"
-                            )
-
-                elif Agent.is_call_tools_node(node):
-                    # Tool usage
-                    async with node.stream(run.ctx) as handle_stream:
-                        async for event in handle_stream:
-                            if isinstance(event, FunctionToolCallEvent):
-                                # Tool emojis mapping
-                                tool_emojis = {
-                                    # "get_file_stats": "📊",
-                                    "find_files_by_name": "🔍",
-                                    "read_file": "📖",
-                                    "list_files": "📁",
-                                    "grep_files": "🔎",
-                                    # "find_config_files": "⚙️",
-                                    # "check_file_exists": "✅",
-                                }
-
-                                emoji = tool_emojis.get(event.part.tool_name, "🔧")
-
-                                # Format args for display
-                                args_str = ""
-                                if event.part.args:
-                                    try:
-                                        args_dict = json.loads(event.part.args)
-                                        args_items = []
-                                        for k, v in args_dict.items():
-                                            if isinstance(v, str) and len(v) > 30:
-                                                v = v[:30] + "..."
-                                            args_items.append(f"{k}={v}")
-                                        args_str = (
-                                            f"({', '.join(args_items)})"
-                                        )
-                                    except:
-                                        args_str = (
-                                            f"({event.part.args[:50]}...)"
-                                        )
-
-                                tool_text = Text(f"  {emoji} ")
-                                tool_text.append(
-                                    event.part.tool_name, style="bold green"
-                                )
-                                tool_text.append(args_str, style="dim")
-                                self.console.print(tool_text)
-
-                            elif isinstance(event, FunctionToolResultEvent):
-                                # Don't show result output - too verbose
-                                pass
-
-                elif Agent.is_end_node(node):
-                    # Evaluation complete
-                    assert run.result is not None
-                    result = run.result
-                    self.console.print(
-                        "  ✅ [bold green]Evaluation complete![/bold green]"
-                    )
-
-        return result
+        """Run agent with streaming display"""
+        display = StreamingResultDisplay(self.console)
+        return await display.run_agent_with_streaming(agent, prompt)
 
 
     async def evaluate_project(
