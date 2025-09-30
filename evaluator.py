@@ -173,7 +173,7 @@ class StreamingResultDisplay:
                         v = v[:30] + "..."
                     args_items.append(f"{k}={v}")
                 args_str = f"({', '.join(args_items)})"
-            except:
+            except (json.JSONDecodeError, AttributeError):
                 args_str = f"({event.part.args[:50]}...)"
 
         tool_text = Text(f"  {emoji} ")
