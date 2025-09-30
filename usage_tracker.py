@@ -121,18 +121,33 @@ class UsageTracker:
         return breakdown
     
     def format_cost_summary(self) -> str:
-        """Format a human-readable cost summary"""
+        """Format a simplified cost summary"""
         breakdown = self.get_cost_breakdown()
         
-        summary = f"""
-Cost Summary:
+        # Since we typically use one model, simplify the display
+        if len(breakdown['models']) == 1:
+            model_name = list(breakdown['models'].keys())[0]
+            model_data = breakdown['models'][model_name]
+            
+            # Clean up model name for display
+            display_name = model_name
+            if ":" in model_name:
+                display_name = model_name.replace(":", " ")
+            
+            summary = f"""Cost Summary:
+Model: {display_name}
+Total Tokens: {breakdown['total_input_tokens']:,} input + {breakdown['total_output_tokens']:,} output
+Total Cost: ${model_data['input_cost']:.4f} input + ${model_data['output_cost']:.4f} output = ${breakdown['total_cost']:.4f}"""
+        else:
+            # Fallback for multiple models
+            summary = f"""Cost Summary:
 Total Tokens: {breakdown['total_input_tokens']:,} input + {breakdown['total_output_tokens']:,} output
 Total Cost: ${breakdown['total_cost']:.4f}
 
 Per Model:"""
-        
-        for model, data in breakdown['models'].items():
-            summary += f"""
+            
+            for model, data in breakdown['models'].items():
+                summary += f"""
   {model}:
     Tokens: {data['input_tokens']:,} input + {data['output_tokens']:,} output
     Cost: ${data['total_cost']:.4f} (${data['input_cost']:.4f} input + ${data['output_cost']:.4f} output)"""

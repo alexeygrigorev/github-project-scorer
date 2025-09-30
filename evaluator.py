@@ -187,6 +187,23 @@ class ProjectEvaluator:
                         "  ✅ [bold green]Evaluation complete![/bold green]"
                     )
 
+        # Show cost after streaming is complete
+        if result and hasattr(result, "usage") and result.usage() is not None:
+            usage = result.usage()
+            input_tokens = usage.input_tokens or 0
+            output_tokens = usage.output_tokens or 0
+            
+            if input_tokens > 0 or output_tokens > 0:
+                # Create temporary usage tracker to calculate cost for this request only
+                temp_tracker = UsageTracker()
+                temp_tracker.pricing = self.usage_tracker.pricing
+                temp_tracker.add_usage(self.model_string, input_tokens, output_tokens)
+                request_cost = temp_tracker.calculate_cost()
+                
+                self.console.print(
+                    f"  💰 [dim]Tokens: {input_tokens:,} input + {output_tokens:,} output | Cost: ${request_cost:.4f}[/dim]"
+                )
+
         return result
 
 
