@@ -17,6 +17,7 @@ class EvaluationCriterion(BaseModel):
     name: str
     kind: Literal["single", "checklist"]
     items: List[EvaluationItem]
+    comment: str | None = None
 
 
 class EvaluationCriteria(BaseModel):
@@ -38,6 +39,7 @@ class ScoredCriteria:
     name: str
     score_levels: List[ScoreLevel]
     max_score: int
+    comment: str | None = None
     
     @property
     def type(self) -> str:
@@ -57,6 +59,7 @@ class ChecklistCriteria:
     name: str
     items: List[ChecklistItem]
     max_score: int
+    comment: str | None = None
     
     @property
     def type(self) -> str:
@@ -122,7 +125,8 @@ def load_criteria_from_yaml(yaml_path: Path) -> List[Union[ScoredCriteria, Check
             result.append(ScoredCriteria(
                 name=criterion.name,
                 score_levels=score_levels,
-                max_score=max_score
+                max_score=max_score,
+                comment=criterion.comment
             ))
         elif criterion.kind == "checklist":
             # Convert to ChecklistCriteria
@@ -134,7 +138,8 @@ def load_criteria_from_yaml(yaml_path: Path) -> List[Union[ScoredCriteria, Check
             result.append(ChecklistCriteria(
                 name=criterion.name,
                 items=items,
-                max_score=max_score
+                max_score=max_score,
+                comment=criterion.comment
             ))
     
     return result

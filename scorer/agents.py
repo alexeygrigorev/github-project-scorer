@@ -92,29 +92,45 @@ Evaluate this repository against: **{criteria_name}**
 
 def create_scored_criteria_prompt(criteria: ScoredCriteria) -> str:
     """Create user prompt for scored criteria"""
-    score_levels_text = "\n".join([
-        f"  {level.score} points: {level.description}" 
-        for level in criteria.score_levels
-    ])
-    
-    return SCORED_CRITERIA_TEMPLATE.format(
+
+    # If there's a comment, modify the score level descriptions to incorporate it
+    score_levels_text_lines = []
+    for level in criteria.score_levels:
+        score_levels_text_lines.append(f"  {level.score} points: {level.description}")
+
+    score_levels_text = "\n".join(score_levels_text_lines)
+
+    # Add clarifying comment right after score levels if present
+    if criteria.comment:
+        score_levels_text += f"\n\n  IMPORTANT: {criteria.comment}"
+
+    prompt = SCORED_CRITERIA_TEMPLATE.format(
         criteria_name=criteria.name,
         score_levels=score_levels_text,
-        max_score=criteria.max_score
+        max_score=criteria.max_score,
     )
+
+    return prompt
 
 
 def create_checklist_criteria_prompt(criteria: ChecklistCriteria) -> str:
     """Create user prompt for checklist criteria"""
-    items_text = "\n".join([
-        f"  Item {i}: {item.description} ({item.points} points)"
-        for i, item in enumerate(criteria.items)
-    ])
-    
-    return CHECKLIST_CRITERIA_TEMPLATE.format(
-        criteria_name=criteria.name,
-        checklist_items=items_text
+    items_text = "\n".join(
+        [
+            f"  Item {i}: {item.description} ({item.points} points)"
+            for i, item in enumerate(criteria.items)
+        ]
     )
+
+    prompt = CHECKLIST_CRITERIA_TEMPLATE.format(
+        criteria_name=criteria.name, checklist_items=items_text
+    )
+
+    # Add comment if present
+    if criteria.comment:
+        prompt += f"\n\n### Additional Guidelines:\n{criteria.comment}"
+
+    return prompt
 
 
 def create_user_prompt(criteria: Union[ScoredCriteria, ChecklistCriteria]) -> str:
@@ -127,16 +143,18 @@ def create_user_prompt(criteria: Union[ScoredCriteria, ChecklistCriteria]) -> st
         raise ValueError(f"Unknown criteria type: {type(criteria)}")
 
 
-def create_evaluation_agent(model_string: str, analyzer_tools: AnalyzerTools, output_type) -> Agent:
+def create_evaluation_agent(
+    model_string: str, analyzer_tools: AnalyzerTools, output_type
+) -> Agent:
     """Create a unified evaluation agent for both scored and checklist criteria"""
-    
+
     tools = get_instance_methods(analyzer_tools)
-    
+
     agent = Agent(
         model=model_string,
         tools=tools,
         output_type=output_type,
-        system_prompt=SYSTEM_INSTRUCTIONS
+        system_prompt=SYSTEM_INSTRUCTIONS,
     )
-    
+
     return agent

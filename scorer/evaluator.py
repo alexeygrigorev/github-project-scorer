@@ -102,6 +102,10 @@ class ChecklistCriteriaWrapper(CriteriaWrapper):
         details = f"Checklist items ({len(self.criteria.items)} total):\n"
         for item in self.criteria.items:
             details += f"  • {item.description} ({item.points} pts)\n"
+        
+        if self.criteria.comment:
+            details += f"\n[ℹ️  {self.criteria.comment}\n"
+        
         return details
 
 
@@ -280,7 +284,12 @@ class ProjectEvaluator:
             # Create wrapper to get display details polymorphically
             wrapper = self._create_criteria_wrapper(criteria)
             details_str = wrapper.get_display_details()
-            
+
+            # If the criterion has a comment, format and append it to the details
+            comment = getattr(wrapper.criteria, "comment", None)
+            if comment:
+                details_str = details_str.rstrip() + "\n\n" + comment + "\n"
+
             # Create a beautiful panel for each criteria
             panel_content = (f"[bold]{wrapper.name}[/bold]\n"
                            f"Criteria {i} of {total_criteria}\n\n"
