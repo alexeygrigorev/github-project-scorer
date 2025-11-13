@@ -90,19 +90,19 @@ This directory contains YAML files that define evaluation criteria for different
 
 ## Criteria Types
 
-### Scored Criteria
+### Single Criteria (Scored)
 Projects are evaluated on a scale (typically 0-2 or 0-4) based on how well they meet the criteria.
 
 Example:
 ```yaml
 - name: "Problem description"
-  type: "scored"
-  score_levels:
-    - score: 0
+  kind: "single"
+  items:
+    - points: 0
       description: "The problem is not described"
-    - score: 1
+    - points: 1
       description: "The problem is described but briefly"
-    - score: 2
+    - points: 2
       description: "The problem is well-described"
 ```
 
@@ -112,12 +112,12 @@ Binary items that are either present or absent. Each item has a fixed point valu
 Example:
 ```yaml
 - name: "Best practices"
-  type: "checklist"
+  kind: "checklist"
   items:
-    - description: "Unit tests are present"
-      points: 1
-    - description: "CI/CD pipeline exists"
-      points: 2
+    - points: 1
+      description: "Unit tests are present"
+    - points: 2
+      description: "CI/CD pipeline exists"
 ```
 
 ## Usage

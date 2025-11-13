@@ -12,7 +12,10 @@ from scorer.models import (
     ChecklistItem, 
     EvaluationResult,
     ProjectEvaluation,
-    load_criteria_from_yaml
+    load_criteria_from_yaml,
+    EvaluationItem,
+    EvaluationCriterion,
+    EvaluationCriteria
 )
 
 
@@ -125,13 +128,13 @@ class TestLoadCriteriaFromYaml:
         yaml_content = """
 criteria:
   - name: "Code Quality"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No code quality measures"
-      - score: 5
+      - points: 5
         description: "Basic code quality"
-      - score: 10
+      - points: 10
         description: "Excellent code quality"
 """
         
@@ -151,12 +154,12 @@ criteria:
         yaml_content = """
 criteria:
   - name: "Project Structure"
-    type: "checklist"
+    kind: "checklist"
     items:
-      - description: "Has README"
-        points: 3
-      - description: "Has tests"
-        points: 5
+      - points: 3
+        description: "Has README"
+      - points: 5
+        description: "Has tests"
 """
         
         yaml_file = self.temp_path / "test_criteria.yaml"
@@ -198,8 +201,10 @@ other_data:
         yaml_file = self.temp_path / "no_criteria.yaml"
         yaml_file.write_text(yaml_content)
         
-        criteria = load_criteria_from_yaml(yaml_file)
-        assert criteria == []
+        # Pydantic validation should raise an error for missing criteria
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            load_criteria_from_yaml(yaml_file)
 
 
 class TestScoreLevel:
@@ -218,3 +223,212 @@ class TestChecklistItem:
         
         assert item.description == "Has tests"
         assert item.points == 3
+
+class TestEvaluationItem:
+    def test_evaluation_item_creation(self):
+        """Test creating an EvaluationItem using Pydantic"""
+        item = EvaluationItem(points=5, description="Basic implementation")
+        
+        assert item.points == 5
+        assert item.description == "Basic implementation"
+    
+    def test_evaluation_item_validation(self):
+        """Test Pydantic validation for EvaluationItem"""
+        # Should work with valid data
+        item = EvaluationItem(points=10, description="Test")
+        assert item.points == 10
+        
+        # Should raise validation error for missing fields
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            EvaluationItem(points=5)  # missing description
+
+
+class TestEvaluationCriterion:
+    def test_evaluation_criterion_single(self):
+        """Test creating a single (scored) EvaluationCriterion"""
+        items = [
+            EvaluationItem(points=0, description="No implementation"),
+            EvaluationItem(points=1, description="Basic implementation"),
+            EvaluationItem(points=2, description="Full implementation")
+        ]
+        
+        criterion = EvaluationCriterion(
+            name="Code Quality",
+            kind="single",
+            items=items
+        )
+        
+        assert criterion.name == "Code Quality"
+        assert criterion.kind == "single"
+        assert len(criterion.items) == 3
+        assert criterion.items[0].points == 0
+        assert criterion.items[2].points == 2
+    
+    def test_evaluation_criterion_checklist(self):
+        """Test creating a checklist EvaluationCriterion"""
+        items = [
+            EvaluationItem(points=1, description="Has README"),
+            EvaluationItem(points=2, description="Has tests"),
+            EvaluationItem(points=1, description="Has documentation")
+        ]
+        
+        criterion = EvaluationCriterion(
+            name="Project Structure",
+            kind="checklist",
+            items=items
+        )
+        
+        assert criterion.name == "Project Structure"
+        assert criterion.kind == "checklist"
+        assert len(criterion.items) == 3
+    
+    def test_evaluation_criterion_validation(self):
+        """Test Pydantic validation for EvaluationCriterion"""
+        from pydantic import ValidationError
+        
+        # Should reject invalid kind
+        with pytest.raises(ValidationError):
+            EvaluationCriterion(
+                name="Test",
+                kind="invalid",  # only "single" and "checklist" allowed
+                items=[]
+            )
+
+
+class TestEvaluationCriteria:
+    def test_evaluation_criteria_creation(self):
+        """Test creating EvaluationCriteria with multiple criteria"""
+        criteria_list = [
+            EvaluationCriterion(
+                name="Code Quality",
+                kind="single",
+                items=[
+                    EvaluationItem(points=0, description="No quality"),
+                    EvaluationItem(points=2, description="High quality")
+                ]
+            ),
+            EvaluationCriterion(
+                name="Documentation",
+                kind="checklist",
+                items=[
+                    EvaluationItem(points=1, description="Has README"),
+                    EvaluationItem(points=1, description="Has tests")
+                ]
+            )
+        ]
+        
+        criteria = EvaluationCriteria(criteria=criteria_list)
+        
+        assert len(criteria.criteria) == 2
+        assert criteria.criteria[0].kind == "single"
+        assert criteria.criteria[1].kind == "checklist"
+    
+    def test_evaluation_criteria_from_dict(self):
+        """Test creating EvaluationCriteria from dictionary using model_validate"""
+        data = {
+            "criteria": [
+                {
+                    "name": "Test Criterion",
+                    "kind": "single",
+                    "items": [
+                        {"points": 0, "description": "None"},
+                        {"points": 1, "description": "Some"}
+                    ]
+                }
+            ]
+        }
+        
+        criteria = EvaluationCriteria.model_validate(data)
+        
+        assert len(criteria.criteria) == 1
+        assert criteria.criteria[0].name == "Test Criterion"
+        assert criteria.criteria[0].kind == "single"
+        assert len(criteria.criteria[0].items) == 2
+
+
+class TestNewSchemaIntegration:
+    def setup_method(self):
+        """Set up test files"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.temp_path = Path(self.temp_dir)
+    
+    def teardown_method(self):
+        """Clean up test files"""
+        shutil.rmtree(self.temp_dir)
+    
+    def test_load_new_schema_format(self):
+        """Test loading the new simplified schema format"""
+        yaml_content = """
+criteria:
+  - name: "Data pipeline"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No data processing pipeline"
+      - points: 1
+        description: "Basic data loading"
+      - points: 2
+        description: "Well-structured pipeline"
+  
+  - name: "Documentation quality"
+    kind: "checklist"
+    items:
+      - points: 1
+        description: "README has clear project goal"
+      - points: 1
+        description: "README includes setup instructions"
+"""
+        
+        yaml_file = self.temp_path / "new_schema.yaml"
+        yaml_file.write_text(yaml_content)
+        
+        criteria = load_criteria_from_yaml(yaml_file)
+        
+        assert len(criteria) == 2
+        
+        # First criterion should be ScoredCriteria (kind="single")
+        assert isinstance(criteria[0], ScoredCriteria)
+        assert criteria[0].name == "Data pipeline"
+        assert criteria[0].max_score == 2
+        assert len(criteria[0].score_levels) == 3
+        
+        # Second criterion should be ChecklistCriteria (kind="checklist")
+        assert isinstance(criteria[1], ChecklistCriteria)
+        assert criteria[1].name == "Documentation quality"
+        assert criteria[1].max_score == 2
+        assert len(criteria[1].items) == 2
+    
+    def test_load_mixed_criteria(self):
+        """Test loading both single and checklist criteria"""
+        yaml_content = """
+criteria:
+  - name: "Single Type"
+    kind: "single"
+    items:
+      - points: 0
+        description: "Level 0"
+      - points: 5
+        description: "Level 5"
+  
+  - name: "Checklist Type"
+    kind: "checklist"
+    items:
+      - points: 2
+        description: "Item 1"
+      - points: 3
+        description: "Item 2"
+      - points: 1
+        description: "Item 3"
+"""
+        
+        yaml_file = self.temp_path / "mixed_schema.yaml"
+        yaml_file.write_text(yaml_content)
+        
+        criteria = load_criteria_from_yaml(yaml_file)
+        
+        assert len(criteria) == 2
+        assert isinstance(criteria[0], ScoredCriteria)
+        assert isinstance(criteria[1], ChecklistCriteria)
+        assert criteria[0].max_score == 5
+        assert criteria[1].max_score == 6  # 2+3+1

@@ -1,76 +1,76 @@
 criteria:
   - name: "Problem description"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "The problem is not described"
-      - score: 1
+      - points: 1
         description: "The problem is described but shortly or not clearly"
-      - score: 2
+      - points: 2
         description: "The problem is well described and it's clear what the problem the project solves"
 
   - name: "Cloud"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "Cloud is not used, things run only locally"
-      - score: 2
+      - points: 2
         description: "The project is developed on the cloud OR uses localstack (or similar tool) OR the project is deployed to Kubernetes or similar container management platforms"
-      - score: 4
+      - points: 4
         description: "The project is developed on the cloud and IaC tools are used for provisioning the infrastructure"
 
   - name: "Experiment tracking and model registry"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No experiment tracking or model registry"
-      - score: 2
+      - points: 2
         description: "Experiments are tracked or models are registered in the registry"
-      - score: 4
+      - points: 4
         description: "Both experiment tracking and model registry are used"
 
   - name: "Workflow orchestration"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No workflow orchestration"
-      - score: 2
+      - points: 2
         description: "Basic workflow orchestration"
-      - score: 4
+      - points: 4
         description: "Fully deployed workflow"
 
   - name: "Model deployment"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "Model is not deployed"
-      - score: 2
+      - points: 2
         description: "Model is deployed but only locally"
-      - score: 4
+      - points: 4
         description: "The model deployment code is containerized and could be deployed to cloud or special tools for model deployment are used"
 
   - name: "Model monitoring"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No model monitoring"
-      - score: 2
+      - points: 2
         description: "Basic model monitoring that calculates and reports metrics"
-      - score: 4
+      - points: 4
         description: "Comprehensive model monitoring that sends alerts or runs a conditional workflow (e.g. retraining, generating debugging dashboard, switching to a different model) if the defined metrics threshold is violated"
 
   - name: "Reproducibility"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No instructions on how to run the code at all, the data is missing"
-      - score: 2
+      - points: 2
         description: "Some instructions are there, but they are not complete OR instructions are clear and complete, the code works, but the data is missing"
-      - score: 4
+      - points: 4
         description: "Instructions are clear, it's easy to run the code, and it works. The versions for all the dependencies are specified"
 
   - name: "Best practices"
-    type: "checklist"
+    kind: "checklist"
     items:
       - description: "There are unit tests"
         points: 1
