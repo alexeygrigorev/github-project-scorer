@@ -23,14 +23,23 @@ uv sync
 
 ## Configuration
 
-Set your API key as an environment variable:
-```bash
-# For OpenAI
-export OPENAI_API_KEY="your-api-key"
+### API Keys Setup
 
-# For Anthropic
-export ANTHROPIC_API_KEY="your-api-key"
-```
+1. Copy the template file to create your `.env`:
+   ```bash
+   cp .env_template .env
+   ```
+
+2. Edit `.env` and add your API keys:
+   ```bash
+   # .env file
+   OPENAI_API_KEY='your-openai-api-key-here'
+   ANTHROPIC_API_KEY='your-anthropic-api-key-here'
+   ```
+
+3. The `.env` file is automatically loaded when you run the application.
+
+**Note**: `.env` is in `.gitignore` and will not be committed to version control. Use `.env_template` as a reference.
 
 ## Usage
 
