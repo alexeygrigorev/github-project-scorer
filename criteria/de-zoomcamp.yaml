@@ -1,80 +1,80 @@
 criteria:
   - name: "Problem description"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "The problem is not described"
-      - score: 1
+      - points: 1
         description: "The problem is described but shortly or not clearly"
-      - score: 2
+      - points: 2
         description: "The problem is well described and it's clear what the problem the project solves"
 
   - name: "Cloud"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "Cloud is not used, things run only locally"
-      - score: 2
+      - points: 2
         description: "The project is developed in the cloud"
-      - score: 4
+      - points: 4
         description: "The project is developed in the cloud and IaC tools are used"
 
   - name: "Data Ingestion: Batch / Workflow orchestration"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No workflow orchestration"
-      - score: 2
+      - points: 2
         description: "Partial workflow orchestration: some steps are orchestrated, some run manually"
-      - score: 4
+      - points: 4
         description: "End-to-end pipeline: multiple steps in the DAG, uploading data to data lake"
 
   - name: "Data Ingestion: Stream"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No streaming system (like Kafka, Pulsar, etc)"
-      - score: 2
+      - points: 2
         description: "A simple pipeline with one consumer and one producer"
-      - score: 4
+      - points: 4
         description: "Using consumer/producers and streaming technologies (like Kafka streaming, Spark streaming, Flink, etc)"
 
   - name: "Data warehouse"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No DWH is used"
-      - score: 2
+      - points: 2
         description: "Tables are created in DWH, but not optimized"
-      - score: 4
+      - points: 4
         description: "Tables are partitioned and clustered in a way that makes sense for the upstream queries (with explanation)"
 
   - name: "Transformations (dbt, spark, etc)"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No transformations"
-      - score: 2
+      - points: 2
         description: "Simple SQL transformation (no dbt or similar tools)"
-      - score: 4
+      - points: 4
         description: "Transformations are defined with dbt, Spark or similar technologies"
 
   - name: "Dashboard"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No dashboard"
-      - score: 2
+      - points: 2
         description: "A dashboard with 1 tile"
-      - score: 4
+      - points: 4
         description: "A dashboard with 2 tiles"
 
   - name: "Reproducibility"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "No instructions how to run the code at all"
-      - score: 2
+      - points: 2
         description: "Some instructions are there, but they are not complete"
-      - score: 4
+      - points: 4
         description: "Instructions are clear, it's easy to run the code, and the code works"

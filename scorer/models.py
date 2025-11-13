@@ -1,10 +1,30 @@
 import yaml
 
-from typing import List, Union
+from typing import List, Union, Literal
 from dataclasses import dataclass
 from pathlib import Path
+from pydantic import BaseModel
 
 
+class EvaluationItem(BaseModel):
+    """Represents a single item in a criteria"""
+    points: int
+    description: str
+
+
+class EvaluationCriterion(BaseModel):
+    """A single evaluation criterion"""
+    name: str
+    kind: Literal["single", "checklist"]
+    items: List[EvaluationItem]
+
+
+class EvaluationCriteria(BaseModel):
+    """Container for all evaluation criteria"""
+    criteria: List[EvaluationCriterion]
+
+
+# Legacy dataclasses for backward compatibility
 @dataclass
 class ScoreLevel:
     """Represents a single score level in a criteria"""
@@ -14,7 +34,7 @@ class ScoreLevel:
 
 @dataclass
 class ScoredCriteria:
-    """Criteria with numeric scoring (0-N points)"""
+    """Criteria with numeric scoring (0-N points) - maps to kind='single'"""
     name: str
     score_levels: List[ScoreLevel]
     max_score: int
@@ -33,7 +53,7 @@ class ChecklistItem:
 
 @dataclass
 class ChecklistCriteria:
-    """Criteria with checklist items"""
+    """Criteria with checklist items - maps to kind='checklist'"""
     name: str
     items: List[ChecklistItem]
     max_score: int
@@ -82,77 +102,39 @@ class ProjectEvaluation:
 
 
 def load_criteria_from_yaml(yaml_path: Path) -> List[Union[ScoredCriteria, ChecklistCriteria]]:
-    """Load evaluation criteria from YAML file"""
+    """Load evaluation criteria from YAML file using new simplified schema"""
     with open(yaml_path, 'r', encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+        criteria_raw = yaml.safe_load(f)
     
-    criteria = []
+    # Parse using Pydantic model
+    criteria_model = EvaluationCriteria.model_validate(criteria_raw)
     
-    for criteria_data in data.get('criteria', []):
-        criteria_type = criteria_data.get('type', '').lower()
-        
-        if criteria_type == 'scored':
-            # Scored criteria - explicit type
-            if 'score_levels' not in criteria_data:
-                raise ValueError(f"Scored criteria '{criteria_data.get('name')}' missing 'score_levels'")
-            
+    # Convert to legacy dataclass format for backward compatibility
+    result = []
+    for criterion in criteria_model.criteria:
+        if criterion.kind == "single":
+            # Convert to ScoredCriteria
             score_levels = [
-                ScoreLevel(score=level['score'], description=level['description'])
-                for level in criteria_data['score_levels']
+                ScoreLevel(score=item.points, description=item.description)
+                for item in criterion.items
             ]
-            max_score = max(level.score for level in score_levels)
-            criteria.append(ScoredCriteria(
-                name=criteria_data['name'],
+            max_score = max(level.score for level in score_levels) if score_levels else 0
+            result.append(ScoredCriteria(
+                name=criterion.name,
                 score_levels=score_levels,
                 max_score=max_score
             ))
-            
-        elif criteria_type == 'checklist':
-            # Checklist criteria - explicit type
-            if 'items' not in criteria_data:
-                raise ValueError(f"Checklist criteria '{criteria_data.get('name')}' missing 'items'")
-            
+        elif criterion.kind == "checklist":
+            # Convert to ChecklistCriteria
             items = [
-                ChecklistItem(description=item['description'], points=item['points'])
-                for item in criteria_data['items']
+                ChecklistItem(description=item.description, points=item.points)
+                for item in criterion.items
             ]
             max_score = sum(item.points for item in items)
-            criteria.append(ChecklistCriteria(
-                name=criteria_data['name'],
+            result.append(ChecklistCriteria(
+                name=criterion.name,
                 items=items,
                 max_score=max_score
             ))
-            
-        elif 'score_levels' in criteria_data:
-            # Fallback: Scored criteria (backward compatibility)
-            print(f"Warning: Criteria '{criteria_data.get('name')}' missing explicit type, assuming 'scored'")
-            score_levels = [
-                ScoreLevel(score=level['score'], description=level['description'])
-                for level in criteria_data['score_levels']
-            ]
-            max_score = max(level.score for level in score_levels)
-            criteria.append(ScoredCriteria(
-                name=criteria_data['name'],
-                score_levels=score_levels,
-                max_score=max_score
-            ))
-            
-        elif 'items' in criteria_data:
-            # Fallback: Checklist criteria (backward compatibility)
-            print(f"Warning: Criteria '{criteria_data.get('name')}' missing explicit type, assuming 'checklist'")
-            items = [
-                ChecklistItem(description=item['description'], points=item['points'])
-                for item in criteria_data['items']
-            ]
-            max_score = sum(item.points for item in items)
-            criteria.append(ChecklistCriteria(
-                name=criteria_data['name'],
-                items=items,
-                max_score=max_score
-            ))
-            
-        else:
-            raise ValueError(f"Unknown criteria type or missing required fields for '{criteria_data.get('name')}'. "
-                           f"Expected type 'scored' with 'score_levels' or type 'checklist' with 'items'")
     
-    return criteria
+    return result
