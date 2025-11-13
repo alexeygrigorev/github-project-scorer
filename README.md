@@ -117,17 +117,17 @@ See `criteria/README.md` for detailed descriptions of each criteria file.
 
 ### Criteria Format
 
-#### Scored Criteria
+#### Single Criteria (Scored)
 ```yaml
 criteria:
   - name: "Problem description"
-    type: "scored"
-    score_levels:
-      - score: 0
+    kind: "single"
+    items:
+      - points: 0
         description: "The problem is not described"
-      - score: 1
+      - points: 1
         description: "The problem is described but briefly"
-      - score: 2
+      - points: 2
         description: "The problem is well-described"
 ```
 
@@ -135,12 +135,12 @@ criteria:
 ```yaml
 criteria:
   - name: "Best practices"
-    type: "checklist"
+    kind: "checklist"
     items:
-      - description: "Hybrid search implementation"
-        points: 1
-      - description: "Document re-ranking"
-        points: 1
+      - points: 1
+        description: "Hybrid search implementation"
+      - points: 1
+        description: "Document re-ranking"
 ```
 
 ## Testing
