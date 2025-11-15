@@ -8,7 +8,11 @@ criteria:
       - points: 2
         description: "The project uses an original dataset"
     comment: >
-      Course-specific datasets (data-engineering-zoomcamp, ml-zoomcamp, mlops-zoomcamp, etc.) count as original datasets.
+      If the project uses another dataset from DataTalksClub,
+      it's considered original. For example, a course repository
+      (such as mlops-zoomcamp, llm-zoomcamp, etc) is original,
+      while datatalksclub/faq is not. The only non-original dataset is 
+      datatalksclub/faq.
 
   # Scored criteria for different aspects
   - name: "Data pipeline"
