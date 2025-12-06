@@ -88,6 +88,25 @@ This directory contains YAML files that define evaluation criteria for different
 #### Checklist Items
 - Best practices: Unit tests, integration test, linter, Makefile, pre-commit hooks, CI/CD (8 points)
 
+### 6. Agent Evaluation (`agent-evaluation.yaml`)
+**Total**: 35 points max (18 scored + 17 bonus)
+
+#### Scored Criteria (18 points)
+- Problem description (0-2)
+- Knowledge base and retrieval (0-2)
+- Agents and LLM (0-3)
+- Code organization (0-2)
+- Testing (0-2)
+- Evaluation (0-3)
+- Monitoring (0-2)
+- Reproducibility (0-2)
+
+#### Checklist Items (17 points)
+- Evaluation bonus: Hand-crafted ground truth dataset (2 points); Manual evaluation against ground truth (2 points)
+- Monitoring bonus: User feedback is collected (1 point); Logs can be turned into a ground truth dataset and evaluated (2 points)
+- Best coding practices: Docker or docker-compose (1 point); `docker-compose up` starts everything (2 points); Makefile (1 point); UV or similar dependency manager (1 point); CI/CD for tests/evals/deploy (2 points)
+- Additional bonus: UI for the agent (1 point); Cloud deployment (2 points)
+
 ## Criteria Types
 
 ### Single Criteria (Scored)

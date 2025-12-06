@@ -1,0 +1,120 @@
+criteria:
+  - name: "Problem description"
+    kind: "single"
+    items:
+      - points: 0
+        description: "The problem is not described in README.md"
+      - points: 1
+        description: "The problem is described briefly or unclearly"
+      - points: 2
+        description: "README.md contains a well-described problem statement and it is clear what the project is solving"
+
+  - name: "Knowledge base and retrieval"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No knowledge database is used in the project"
+      - points: 1
+        description: "A knowledge base is used"
+      - points: 2
+        description: "A knowledge base is used, retrieval is properly evaluated, the best performing search approach is used, and everything is documented"
+
+  - name: "Agents and LLM"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No LLM is used"
+      - points: 1
+        description: "LLM is used with no tools"
+      - points: 2
+        description: "LLM is used with one tool or with a pre-defined workflow like RAG, documented"
+      - points: 3
+        description: "LLM is used with multiple tools, the tools are documented"
+
+  - name: "Code organization"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No clear code organization"
+      - points: 1
+        description: "All the code is only in Jupyter notebooks but README.md describes well which notebook contains what"
+      - points: 2
+        description: "The code is organized into a Python project with a clear and well-described structure in README or other docs. Some code can still be in Jupyter notebooks."
+
+  - name: "Testing"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No tests"
+      - points: 1
+        description: "Unit tests only"
+      - points: 2
+        description: "Unit tests and judge tests (with or without a framework), clearly documented how to run them"
+
+  - name: "Evaluation"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No evaluation"
+      - points: 2
+        description: "LLM-based evaluation based on a ground truth dataset, README describes how to run evaluation"
+      - points: 3
+        description: "LLM-based evaluation based on a ground truth dataset plus evaluation used for tuning parameters like prompt, chunking, or model, with or without a framework, all documented"
+
+  - name: "Evaluation bonus points"
+    kind: "checklist"
+    items:
+      - points: 2
+        description: "Hand-crafted ground truth dataset instead of an LLM-generated one, documented"
+      - points: 2
+        description: "Manual evaluation against the ground truth dataset, documented"
+
+  - name: "Monitoring"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No monitoring"
+      - points: 1
+        description: "Logs are collected"
+      - points: 2
+        description: "Logs are collected and displayed in a monitoring dashboard, the process is described in the README, it is clear how logs are processed and how to access the monitoring dashboard"
+
+  - name: "Monitoring bonus points"
+    kind: "checklist"
+    items:
+      - points: 1
+        description: "User feedback is collected and documented"
+      - points: 2
+        description: "It is possible to automatically turn some logs into a ground truth dataset and run evaluations on them"
+
+  - name: "Reproducibility"
+    kind: "single"
+    items:
+      - points: 0
+        description: "No instructions how to run the code, data is missing or not accessible"
+      - points: 1
+        description: "Instructions are incomplete, or instructions are complete but data is missing or not accessible"
+      - points: 2
+        description: "Instructions are clear and complete: README describes how to set up the project, install dependencies, run the main application, and the data is accessible"
+
+  - name: "Best coding practices"
+    kind: "checklist"
+    items:
+      - points: 1
+        description: "Containerization: Docker and/or docker-compose are used for all the dependencies"
+      - points: 2
+        description: "Docker-compose up starts the entire system with the main agent application and all the other dependencies"
+      - points: 1
+        description: "Makefile: There is a makefile that makes running things easier"
+      - points: 1
+        description: "Dependency management and virtual environment: UV or a similar tool is used"
+      - points: 2
+        description: "CI/CD for running tests, evaluations, and/or deployment"
+
+  - name: "Additional bonus points"
+    kind: "checklist"
+    items:
+      - points: 1
+        description: "There is UI for the agent, either terminal or web"
+      - points: 2
+        description: "The application is deployed to the cloud"
