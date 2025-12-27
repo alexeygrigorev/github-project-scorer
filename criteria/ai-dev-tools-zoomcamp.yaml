@@ -1,0 +1,124 @@
+criteria:
+  - name: "Problem description (README)"
+    kind: "single"
+    items:
+      - description: "The problem is not described."
+        points: 0
+      - description: "The problem is described briefly, but it is unclear what the system does or what functionality is expected."
+        points: 1
+      - description: "The README clearly describes the problem, the system’s functionality, and what the project is expected to do."
+        points: 2
+
+  - name: "AI system development (tools, workflow, MCP)"
+    kind: "single"
+    items:
+      - description: "No description of how the system was built or how AI tools were used."
+        points: 0
+      - description: "The project describes how AI tools were used to build the system (e.g. coding assistants, prompts, workflows, AGENTS.md or similar guidance)."
+        points: 1
+      - description: "The project clearly documents AI-assisted system development and additionally describes how MCP was used (e.g. MCP server, tools, or workflow)."
+        points: 2
+
+  - name: "Technologies and system architecture"
+    kind: "single"
+    items:
+      - description: "Technologies used in the project are not described or are unclear."
+        points: 0
+      - description: "The main technologies are mentioned (e.g. frontend framework, backend framework, database), but without explaining their roles."
+        points: 1
+      - description: "The project clearly describes the technologies used (frontend, backend, database, containerization, CI/CD) and explains how they fit into the system architecture."
+        points: 2
+
+  - name: "Front-end implementation"
+    kind: "single"
+    items:
+      - description: "No front-end or non-functional front-end."
+        points: 0
+      - description: "A functional front-end exists, but structure is unclear or backend calls are scattered."
+        points: 1
+      - description: "Front-end is functional and well-structured, with centralized backend communication."
+        points: 2
+      - description: "Front-end is functional, well-structured, and includes tests covering core logic, with clear instructions on how to run them."
+        points: 3
+
+  - name: "API contract (OpenAPI specifications)"
+    kind: "single"
+    items:
+      - description: "No OpenAPI specification."
+        points: 0
+      - description: "OpenAPI specification exists but is incomplete or loosely aligned with front-end needs."
+        points: 1
+      - description: "OpenAPI specification fully reflects front-end requirements and is used as the contract for backend development."
+        points: 2
+
+  - name: "Back-end implementation"
+    kind: "single"
+    items:
+      - description: "No back-end or back-end does not follow the API contract."
+        points: 0
+      - description: "Back-end implements required endpoints but has limited structure or documentation."
+        points: 1
+      - description: "Back-end is well-structured and follows the OpenAPI specifications."
+        points: 2
+      - description: "Back-end is well-structured, follows the OpenAPI specifications, and includes tests covering core functionality, clearly documented."
+        points: 3
+
+  - name: "Database integration"
+    kind: "single"
+    items:
+      - description: "No database or persistent storage."
+        points: 0
+      - description: "Database is integrated, but configuration or usage is minimal or poorly documented."
+        points: 1
+      - description: "Database layer is properly integrated, supports different environments (e.g. SQLite and Postgres), and is documented."
+        points: 2
+
+  - name: "Containerization"
+    kind: "single"
+    items:
+      - description: "No containerization."
+        points: 0
+      - description: "Dockerfiles exist, but running the full system requires manual steps."
+        points: 1
+      - description: "The entire system runs via Docker or docker-compose with clear instructions."
+        points: 2
+
+  - name: "Integration testing"
+    kind: "single"
+    items:
+      - description: "No integration tests."
+        points: 0
+      - description: "Integration tests exist but are limited or not clearly separated from unit tests."
+        points: 1
+      - description: "Integration tests are clearly separated, cover key workflows (including database interactions), and are documented."
+        points: 2
+
+  - name: "Deployment"
+    kind: "single"
+    items:
+      - description: "Application is not deployed."
+        points: 0
+      - description: "Deployment steps are described, but no working deployment is shown."
+        points: 1
+      - description: "Application is deployed to the cloud with a working URL or clear proof of deployment."
+        points: 2
+
+  - name: "CI/CD pipeline"
+    kind: "single"
+    items:
+      - description: "No CI/CD pipeline."
+        points: 0
+      - description: "CI pipeline runs tests automatically."
+        points: 1
+      - description: "CI/CD pipeline runs tests and deploys the application when tests pass."
+        points: 2
+
+  - name: "Reproducibility"
+    kind: "single"
+    items:
+      - description: "Project cannot be run with the provided instructions."
+        points: 0
+      - description: "Project can be run, but setup or run instructions are incomplete."
+        points: 1
+      - description: "Clear instructions exist to set up, run, test, and deploy the system end-to-end."
+        points: 2
